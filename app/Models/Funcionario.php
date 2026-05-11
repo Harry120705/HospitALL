@@ -7,7 +7,7 @@ use MongoDB\Laravel\Eloquent\Model;
 class Funcionario extends Model
 {
     protected $connection = 'mongodb';
-    protected $collection = 'funcionarios';
+    protected $table = 'FUNCIONARIOS';
 
     protected $fillable = [
         'nome',
