@@ -2,9 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
+// SPA entry point — Vue Router handles all frontend routes
+Route::get('/{any}', function () {
     return view('welcome');
-});
+})->where('any', '^(?!api|storage|_debugbar).*$');
 
 Route::resource('hospitais', \App\Http\Controllers\HospitalController::class);
 Route::resource('funcionarios', \App\Http\Controllers\FuncionarioController::class);
