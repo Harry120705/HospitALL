@@ -1,5 +1,5 @@
 <template>
-  <div class="area-card card" :class="{ 'area-card--active': isHovered }" @mouseenter="isHovered = true" @mouseleave="isHovered = false" @click="goToSetor">
+  <div class="area-card card" :class="{ 'area-card--active': isHovered }" @mouseenter="isHovered = true" @mouseleave="isHovered = false; menuOpen = false" @click="goToSetor">
 
     <!-- Header -->
     <div class="area-card__header">
@@ -15,9 +15,6 @@
           <div v-if="menuOpen" class="dropdown-menu area-card__menu">
             <button class="dropdown-item" @click.stop="emit('edit', setor); menuOpen = false">
               <Pencil :size="14" /> Editar área
-            </button>
-            <button class="dropdown-item" @click.stop="emit('report', setor); menuOpen = false">
-              <BarChart2 :size="14" /> Ver relatório
             </button>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item danger" @click.stop="emit('delete', setor); menuOpen = false">
@@ -49,14 +46,7 @@
       </div>
     </div>
 
-    <!-- Access Link -->
-    <Transition name="slide-up">
-      <div v-if="isHovered" class="area-card__link">
-        <RouterLink :to="`/setor/${setor._id}`" class="access-link">
-          Acessar setor <ArrowRight :size="14" />
-        </RouterLink>
-      </div>
-    </Transition>
+
 
   </div>
 </template>
@@ -233,44 +223,7 @@ onUnmounted(() => {
   color: var(--color-text-primary);
 }
 
-/* Access Link */
-.area-card__link {
-  border-top: 1px solid var(--color-border);
-  padding-top: 10px;
-  margin-top: -4px;
-}
 
-.access-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-primary);
-  text-decoration: none;
-  transition: gap var(--transition-fast);
-}
-
-.access-link:hover { gap: 8px; }
-
-/* Dropdown */
-.dropdown-divider {
-  height: 1px;
-  background: var(--color-border);
-  margin: 4px 0;
-}
-
-/* Animations */
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: opacity 200ms, transform 200ms;
-}
-
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(6px);
-}
 
 .dropdown-fade-enter-active,
 .dropdown-fade-leave-active {

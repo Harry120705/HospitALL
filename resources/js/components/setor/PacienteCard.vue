@@ -13,7 +13,7 @@
 
     <div class="pac-card__body">
       <div class="pac-card__top">
-        <h4 class="pac-name">{{ atendimento.paciente?.nome ?? '—' }}</h4>
+        <h4 class="pac-name">{{ atendimento.paciente?.nome || atendimento.dados_iniciais?.paciente_nome || '—' }}</h4>
         <!-- Manchester Badge -->
         <span class="badge" :style="{ background: manchesterBg + '22', color: manchesterColor }">
           <span class="badge-dot" :style="{ background: manchesterColor }"></span>
@@ -57,16 +57,17 @@ const MANCHESTER_MAP = {
   nao_urgente:   { label: 'Não Urgente',   color: '#0284C7', bg: '#0EA5E9' },
 };
 
-const manchesterData = computed(
-  () => MANCHESTER_MAP[props.atendimento.protocolo_manchester] ?? { label: '—', color: '#94A3B8', bg: '#94A3B8' }
-);
+const manchesterData = computed(() => {
+  const code = props.atendimento.protocolo_manchester || props.atendimento.dados_iniciais?.protocolo_manchester;
+  return MANCHESTER_MAP[code] ?? { label: '—', color: '#94A3B8', bg: '#94A3B8' };
+});
 
 const manchesterLabel = computed(() => manchesterData.value.label);
 const manchesterColor = computed(() => manchesterData.value.color);
 const manchesterBg    = computed(() => manchesterData.value.bg);
 
 const initials = computed(() => {
-  const nome = props.atendimento.paciente?.nome ?? '?';
+  const nome = props.atendimento.paciente?.nome || props.atendimento.dados_iniciais?.paciente_nome || '?';
   return nome.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase();
 });
 </script>

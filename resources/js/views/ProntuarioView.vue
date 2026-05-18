@@ -5,7 +5,7 @@
     <aside class="prontuario-aside">
       <!-- Back -->
       <RouterLink :to="backLink" class="back-link">
-        <ArrowLeft :size="15" /> Voltar ao Setor
+        <ArrowLeft :size="15" /> Voltar para Pacientes
       </RouterLink>
 
       <div class="aside-section-label">
@@ -113,8 +113,8 @@ function onEvolucaoCriada(ev) {
 }
 
 const backLink = computed(() => {
-  const setor = atendimento.value?.alocacao_leito?.setor;
-  return '/';
+  const idSetor = atendimento.value?.alocacao_leito?.setor_id;
+  return idSetor ? `/setor/${idSetor}` : '/';
 });
 
 const MANCHESTER_MAP = {

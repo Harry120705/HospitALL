@@ -98,13 +98,21 @@
       />
     </div>
 
+    <!-- Toast Notification -->
+    <Transition name="toast">
+      <div v-if="toastMsg" class="toast-notification">
+        <CheckCircle :size="16" />
+        {{ toastMsg }}
+      </div>
+    </Transition>
+
   </main>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
-import { ArrowLeft, Plus, BedDouble, Users, Search, UserX, UserPlus } from 'lucide-vue-next';
+import { ArrowLeft, Plus, BedDouble, Users, Search, UserX, UserPlus, CheckCircle } from 'lucide-vue-next';
 import { useHospitalStore } from '@/stores/hospital.js';
 import { usePacienteStore } from '@/stores/paciente.js';
 import Manchester from '@/components/setor/Manchester.vue';
@@ -120,17 +128,24 @@ const searchQuery     = ref('');
 const manchesterFilter = ref('todos');
 const modalAdmitir    = ref(false);
 const modalNovoPaciente = ref(false);
+const toastMsg        = ref('');
 
 const setor = computed(() => hospitalStore.getSetorById(route.params.id));
 
 const filteredAtendimentos = computed(() => {
   let list = pacienteStore.atendimentos;
   if (manchesterFilter.value !== 'todos') {
-    list = list.filter((a) => a.protocolo_manchester === manchesterFilter.value);
+    list = list.filter((a) => {
+      const code = a.protocolo_manchester || a.dados_iniciais?.protocolo_manchester;
+      return code === manchesterFilter.value;
+    });
   }
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase();
-    list = list.filter((a) => a.paciente?.nome?.toLowerCase().includes(q));
+    list = list.filter((a) => {
+      const nome = a.paciente?.nome || a.dados_iniciais?.paciente_nome || '';
+      return nome.toLowerCase().includes(q);
+    });
   }
   return list;
 });
@@ -141,12 +156,19 @@ async function load() {
 }
 
 function onPacienteAdmitido(atend) {
-  // Store já insere no topo da lista reativamente
-  console.info('Paciente admitido:', atend._id);
+  // Atualiza o gráfico de ocupação do setor
+  if (setor.value) {
+    setor.value.ocupacao_atual = (setor.value.ocupacao_atual || 0) + 1;
+  }
+  
+  toastMsg.value = 'Paciente admitido com sucesso no setor!';
+  setTimeout(() => toastMsg.value = '', 4000);
 }
 
 function onPacienteCriado(paciente) {
-  console.info('Novo paciente criado:', paciente.nome);
+  toastMsg.value = `Paciente ${paciente.nome} cadastrado com sucesso!`;
+  setTimeout(() => toastMsg.value = '', 4000);
+  
   // Pode fechar o modal e opcionalmente abrir o modal de admissão:
   modalNovoPaciente.value = false;
   modalAdmitir.value = true;
@@ -283,5 +305,34 @@ watch(() => route.params.id, load);
 .empty-icon {
   margin: 0 auto 12px;
   color: var(--color-text-muted);
+}
+
+/* Toast */
+.toast-notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #10B981;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 9999;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  transform: translateY(20px);
+  opacity: 0;
 }
 </style>

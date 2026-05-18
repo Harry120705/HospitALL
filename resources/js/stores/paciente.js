@@ -109,9 +109,10 @@ export const usePacienteStore = defineStore('paciente', () => {
       paciente_id:          payload.paciente_id,
       hospital_id:          payload.hospital_id,
       status:               'AGUARDANDO_TRIAGEM',
-      protocolo_manchester: payload.protocolo_manchester ?? null,
       dados_iniciais: {
         queixa_principal: payload.queixa_principal ?? '',
+        protocolo_manchester: payload.protocolo_manchester ?? null,
+        paciente_nome: payload.paciente_obj?.nome ?? '',
       },
       alocacao_leito: {
         numero:   payload.leito ?? '',
@@ -123,6 +124,11 @@ export const usePacienteStore = defineStore('paciente', () => {
       administracao_enfermagem: [],
     };
     const { data } = await api.post('/atendimentos', body);
+    
+    if (!data.paciente && payload.paciente_obj) {
+      data.paciente = payload.paciente_obj;
+    }
+    
     const normalizado = _normalizeAtendimento(data);
     // Insere no topo da lista reativa
     atendimentos.value = [normalizado, ...atendimentos.value];

@@ -13,23 +13,7 @@
         </div>
       </RouterLink>
 
-      <!-- Search -->
-      <div class="header-search">
-        <div class="input-search">
-          <Search :size="16" class="search-icon" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Buscar áreas, pacientes, prontuários..."
-            @keyup.enter="onSearch"
-          />
-          <div v-if="searchQuery" class="search-kbd">
-            <button class="search-clear" @click="searchQuery = ''">
-              <X :size="14" />
-            </button>
-          </div>
-        </div>
-      </div>
+
 
       <!-- Right Actions -->
       <div class="header-actions">
@@ -82,7 +66,6 @@ import {
 import { useHospitalStore } from '@/stores/hospital.js';
 
 const hospitalStore = useHospitalStore();
-const searchQuery   = ref('');
 const userMenuOpen  = ref(false);
 const userDropdownRef = ref(null);
 
@@ -92,10 +75,6 @@ function toggleUserMenu() {
 
 function toggleNotif() {
   // Future: open notifications panel
-}
-
-function onSearch() {
-  // Future: global search
 }
 
 // ── Click-outside handler ─────────────────────────────────────────
@@ -187,30 +166,7 @@ onUnmounted(() => {
   line-height: 1.2;
 }
 
-/* Search */
-.header-search {
-  flex: 1;
-  max-width: 480px;
-}
 
-.search-icon {
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-
-.search-clear {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  padding: 2px;
-  border-radius: 4px;
-  transition: color var(--transition-fast);
-}
-
-.search-clear:hover { color: var(--color-text-primary); }
 
 /* Actions */
 .header-actions {

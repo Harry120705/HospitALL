@@ -3,7 +3,7 @@
 
     <!-- Page Header -->
     <div class="page-header">
-      <div>
+      <div style="flex:1">
         <p class="section-label">Dashboard de Gestão</p>
         <h1 class="page-title">Áreas Hospitalares</h1>
         <p class="page-subtitle" v-if="!hospitalStore.loading">
@@ -12,6 +12,15 @@
           {{ hospitalStore.stats?.total_leitos ?? '—' }} leitos ocupados
         </p>
         <div v-else class="skeleton skeleton-subtitle"></div>
+      </div>
+
+      <div class="input-search" style="max-width: 300px; margin-right: 16px;">
+        <Search :size="16" style="color: var(--color-text-muted); flex-shrink: 0;" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Buscar área por nome..."
+        />
       </div>
 
       <button class="btn btn-primary" id="btn-cadastrar-area" @click="modalArea = true">
@@ -60,7 +69,7 @@
     <!-- Area Cards Grid -->
     <div v-if="!hospitalStore.loading" class="areas-grid">
       <AreaCard
-        v-for="setor in hospitalStore.setores"
+        v-for="setor in filteredSetores"
         :key="setor._id"
         :setor="setor"
         @edit="onEdit"
@@ -76,8 +85,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { Plus, BedDouble, Users, TrendingUp } from 'lucide-vue-next';
+import { ref, computed, onMounted } from 'vue';
+import { Plus, BedDouble, Users, TrendingUp, Search } from 'lucide-vue-next';
 import { useHospitalStore } from '@/stores/hospital.js';
 import StatCard from '@/components/dashboard/StatCard.vue';
 import AreaCard from '@/components/dashboard/AreaCard.vue';
@@ -85,6 +94,13 @@ import ModalNovaArea from '@/components/dashboard/ModalNovaArea.vue';
 
 const hospitalStore = useHospitalStore();
 const modalArea = ref(false);
+const searchQuery = ref('');
+
+const filteredSetores = computed(() => {
+  if (!searchQuery.value) return hospitalStore.setores;
+  const q = searchQuery.value.toLowerCase();
+  return hospitalStore.setores.filter(s => s.nome.toLowerCase().includes(q));
+});
 
 onMounted(() => {
   hospitalStore.fetchHospital();

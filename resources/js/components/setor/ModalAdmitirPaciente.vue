@@ -196,6 +196,7 @@ async function submit() {
   try {
     const admitido = await pacienteStore.admitirPaciente({
       paciente_id:          _mongoId(pacienteSelecionado.value),
+      paciente_obj:         pacienteSelecionado.value,
       hospital_id:          _mongoId(hospitalStore.hospital),
       setor_id:             props.setorId,
       setor_nome:           props.setorNome,
