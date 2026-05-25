@@ -69,6 +69,9 @@ function onOverlayClick() {
   border-radius: 16px;
   box-shadow: 0 24px 64px -12px rgb(0 0 0 / 0.25);
   width: 100%;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -123,6 +126,7 @@ function onOverlayClick() {
 
 .modal-body {
   padding: 24px;
+  overflow-y: auto;
 }
 
 /* Transition */

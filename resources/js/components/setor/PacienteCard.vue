@@ -1,8 +1,9 @@
 <template>
-  <RouterLink
-    :to="`/prontuario/${atendimento._id}`"
+  <button
+    type="button"
     class="paciente-card card"
-    :id="`card-paciente-${atendimento._id}`"
+    :id="`card-paciente-${cardId}`"
+    @click="emit('click')"
   >
     <div class="pac-card__left">
       <!-- Avatar -->
@@ -13,23 +14,28 @@
 
     <div class="pac-card__body">
       <div class="pac-card__top">
-        <h4 class="pac-name">{{ atendimento.paciente?.nome || atendimento.dados_iniciais?.paciente_nome || '—' }}</h4>
+        <h4 class="pac-name">{{ nomePaciente }}</h4>
         <!-- Manchester Badge -->
-        <span class="badge" :style="{ background: manchesterBg + '22', color: manchesterColor }">
+        <span
+          v-if="temAtendimento"
+          class="badge"
+          :style="{ background: manchesterBg + '22', color: manchesterColor }"
+        >
           <span class="badge-dot" :style="{ background: manchesterColor }"></span>
           {{ manchesterLabel }}
         </span>
+        <span v-else class="badge badge--muted">Sem leito</span>
       </div>
 
       <div class="pac-card__meta">
         <span class="meta-item">
           <BedDouble :size="12" />
-          Leito {{ atendimento.alocacao_leito?.numero ?? '—' }}
+          Leito {{ atendimento?.alocacao_leito?.numero ?? '—' }}
         </span>
         <span class="meta-divider">·</span>
         <span class="meta-item">
           <Stethoscope :size="12" />
-          {{ atendimento.dados_iniciais?.queixa_principal ?? 'Sem queixa registrada' }}
+          {{ atendimento?.dados_iniciais?.queixa_principal ?? 'Sem queixa registrada' }}
         </span>
       </div>
     </div>
@@ -37,17 +43,18 @@
     <div class="pac-card__arrow">
       <ChevronRight :size="16" />
     </div>
-  </RouterLink>
+  </button>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import { RouterLink } from 'vue-router';
 import { BedDouble, Stethoscope, ChevronRight } from 'lucide-vue-next';
 
 const props = defineProps({
-  atendimento: { type: Object, required: true },
+  paciente: { type: Object, required: true },
+  atendimento: { type: Object, default: null },
 });
+const emit = defineEmits(['click']);
 
 const MANCHESTER_MAP = {
   emergencia:    { label: 'Emergência',    color: '#EF4444', bg: '#EF4444' },
@@ -58,7 +65,7 @@ const MANCHESTER_MAP = {
 };
 
 const manchesterData = computed(() => {
-  const code = props.atendimento.protocolo_manchester || props.atendimento.dados_iniciais?.protocolo_manchester;
+  const code = props.atendimento?.protocolo_manchester || props.atendimento?.dados_iniciais?.protocolo_manchester;
   return MANCHESTER_MAP[code] ?? { label: '—', color: '#94A3B8', bg: '#94A3B8' };
 });
 
@@ -66,10 +73,12 @@ const manchesterLabel = computed(() => manchesterData.value.label);
 const manchesterColor = computed(() => manchesterData.value.color);
 const manchesterBg    = computed(() => manchesterData.value.bg);
 
-const initials = computed(() => {
-  const nome = props.atendimento.paciente?.nome || props.atendimento.dados_iniciais?.paciente_nome || '?';
-  return nome.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase();
-});
+const nomePaciente = computed(() => props.paciente?.nome ?? '—');
+const initials = computed(() =>
+  (nomePaciente.value || '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
+);
+const temAtendimento = computed(() => Boolean(props.atendimento));
+const cardId = computed(() => props.atendimento?._id ?? props.paciente?._id ?? 'paciente');
 </script>
 
 <style scoped>
@@ -79,8 +88,13 @@ const initials = computed(() => {
   gap: 14px;
   padding: 14px 16px;
   text-decoration: none;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
+  cursor: pointer;
 }
 
 .paciente-card:hover {
@@ -126,6 +140,12 @@ const initials = computed(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.badge--muted {
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FDE68A;
 }
 
 .badge-dot {

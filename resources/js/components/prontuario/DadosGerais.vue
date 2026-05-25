@@ -12,16 +12,12 @@
 
     <dl class="dg-list">
       <div class="dg-item">
-        <dt><User :size="13" /> Contato</dt>
-        <dd>{{ paciente.contato?.nome ?? '—' }}</dd>
+        <dt><User :size="13" /> Contato de Emergência</dt>
+        <dd>{{ contatoNome }}</dd>
       </div>
       <div class="dg-item">
         <dt><Phone :size="13" /> Telefone</dt>
-        <dd>{{ paciente.contato?.telefone ?? '—' }}</dd>
-      </div>
-      <div class="dg-item">
-        <dt><Link2 :size="13" /> Parentesco</dt>
-        <dd>{{ paciente.contato?.parentesco ?? '—' }}</dd>
+        <dd>{{ contatoTelefone }}</dd>
       </div>
     </dl>
   </div>
@@ -37,6 +33,23 @@ const props = defineProps({
 
 const initials = computed(() =>
   (props.paciente.nome ?? '?').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
+);
+
+const contatoNome = computed(() =>
+  props.paciente.contato_emergencia_nome
+  ?? props.paciente.contato?.nome
+  ?? '—'
+);
+
+const contatoTelefone = computed(() =>
+  props.paciente.contato_emergencia_telefone
+  ?? props.paciente.contato?.telefone
+  ?? props.paciente.telefone
+  ?? '—'
+);
+
+const contatoParentesco = computed(() =>
+  props.paciente.contato?.parentesco ?? '—'
 );
 
 const idade = computed(() => {

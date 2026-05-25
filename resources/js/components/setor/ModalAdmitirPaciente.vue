@@ -119,6 +119,7 @@ const props = defineProps({
   modelValue: { type: Boolean, required: true },
   setorId:    { type: String,  required: true },
   setorNome:  { type: String,  default: '' },
+  pacienteInicial: { type: Object, default: null },
 });
 const emit = defineEmits(['update:modelValue', 'admitido']);
 
@@ -140,6 +141,13 @@ const form = ref({
   leito:                '',
   protocolo_manchester: '',
   queixa_principal:     '',
+});
+
+watch(() => props.pacienteInicial, (value) => {
+  if (!value) return;
+  pacienteSelecionado.value = value;
+  buscaNome.value = value.nome ?? '';
+  resultados.value = [];
 });
 
 // ── Busca de pacientes na API ─────────────────────────────────

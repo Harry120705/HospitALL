@@ -45,15 +45,141 @@
         </div>
       </div>
 
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="np-genero">Gênero / Sexo *</label>
+          <select
+            id="np-genero"
+            v-model="form.genero"
+            class="form-input"
+            required
+          >
+            <option value="" disabled>Selecione</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Feminino">Feminino</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="np-sus">Cartão SUS *</label>
+          <input
+            id="np-sus"
+            v-model="form.cartao_sus"
+            type="text"
+            class="form-input"
+            placeholder="700401234567890"
+            required
+          />
+        </div>
+      </div>
+
       <div class="form-row">
-        <label class="form-label" for="np-email">E-mail</label>
+        <label class="form-label" for="np-telefone">Telefone / Celular *</label>
         <input
-          id="np-email"
-          v-model="form.email"
-          type="email"
+          id="np-telefone"
+          v-model="form.telefone"
+          type="text"
           class="form-input"
-          placeholder="joao@email.com"
+          placeholder="(93) 99123-4567"
+          required
         />
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="np-contato-nome">Contato de Emergência - Nome *</label>
+          <input
+            id="np-contato-nome"
+            v-model="form.contato_emergencia_nome"
+            type="text"
+            class="form-input"
+            placeholder="Nome do responsável"
+            required
+          />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="np-contato-telefone">Contato de Emergência - Telefone *</label>
+          <input
+            id="np-contato-telefone"
+            v-model="form.contato_emergencia_telefone"
+            type="text"
+            class="form-input"
+            placeholder="(93) 99234-5678"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label" for="np-tipo-sanguineo">Tipo Sanguíneo *</label>
+        <select
+          id="np-tipo-sanguineo"
+          v-model="form.tipo_sanguineo"
+          class="form-input"
+          required
+        >
+          <option value="" disabled>Selecione</option>
+          <option value="A+">A+</option>
+          <option value="A-">A-</option>
+          <option value="B+">B+</option>
+          <option value="B-">B-</option>
+          <option value="AB+">AB+</option>
+          <option value="AB-">AB-</option>
+          <option value="O+">O+</option>
+          <option value="O-">O-</option>
+        </select>
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label class="form-label" for="np-peso">Peso (kg)</label>
+          <input
+            id="np-peso"
+            v-model.number="form.peso_kg"
+            type="number"
+            min="0"
+            step="0.1"
+            class="form-input"
+            placeholder="Ex: 22"
+          />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="np-altura">Altura (cm)</label>
+          <input
+            id="np-altura"
+            v-model.number="form.altura_cm"
+            type="number"
+            min="0"
+            step="0.1"
+            class="form-input"
+            placeholder="Ex: 115"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label" for="np-alergias">Alergias Conhecidas</label>
+        <textarea
+          id="np-alergias"
+          v-model="form.alergias"
+          class="form-input"
+          rows="3"
+          placeholder="Ex: Dipirona, Neosaldina"
+        ></textarea>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label" for="np-comorbidades">Condições Crônicas / Comorbidades</label>
+        <textarea
+          id="np-comorbidades"
+          v-model="form.comorbidades"
+          class="form-input"
+          rows="3"
+          placeholder="Ex: Hipertensão, Diabetes"
+        ></textarea>
       </div>
 
       <div v-if="errorMsg" class="form-error">
@@ -81,6 +207,8 @@ import api from '@/services/api.js';
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
+  setorId: { type: String, default: null },
+  setorNome: { type: String, default: '' },
 });
 const emit = defineEmits(['update:modelValue', 'criado']);
 
@@ -95,7 +223,16 @@ const form = ref({
   nome: '',
   cpf: '',
   data_nascimento: '',
-  email: '',
+  genero: '',
+  cartao_sus: '',
+  telefone: '',
+  contato_emergencia_nome: '',
+  contato_emergencia_telefone: '',
+  tipo_sanguineo: '',
+  peso_kg: null,
+  altura_cm: null,
+  alergias: '',
+  comorbidades: '',
 });
 
 async function submit() {
@@ -104,11 +241,21 @@ async function submit() {
   try {
     const payload = {
       nome: form.value.nome,
+      cpf: form.value.cpf,
       data_nascimento: form.value.data_nascimento,
-      contato: {
-        cpf: form.value.cpf,
-        email: form.value.email,
-      }
+      genero: form.value.genero,
+      cartao_sus: form.value.cartao_sus,
+      telefone: form.value.telefone,
+      contato_emergencia_nome: form.value.contato_emergencia_nome,
+      contato_emergencia_telefone: form.value.contato_emergencia_telefone,
+      tipo_sanguineo: form.value.tipo_sanguineo,
+      peso_kg: form.value.peso_kg,
+      altura_cm: form.value.altura_cm,
+      alergias: form.value.alergias,
+      comorbidades: form.value.comorbidades,
+      status_paciente: 'Novo Paciente',
+      setor_id: props.setorId,
+      setor_nome: props.setorNome,
     };
     const { data } = await api.post('/pacientes', payload);
     emit('criado', data);
@@ -126,7 +273,21 @@ async function submit() {
 }
 
 function resetForm() {
-  form.value = { nome: '', cpf: '', data_nascimento: '', email: '' };
+  form.value = {
+    nome: '',
+    cpf: '',
+    data_nascimento: '',
+    genero: '',
+    cartao_sus: '',
+    telefone: '',
+    contato_emergencia_nome: '',
+    contato_emergencia_telefone: '',
+    tipo_sanguineo: '',
+    peso_kg: null,
+    altura_cm: null,
+    alergias: '',
+    comorbidades: '',
+  };
 }
 </script>
 

@@ -17,22 +17,22 @@
         <button class="btn btn-ghost" @click="modalNovoPaciente = true">
           <UserPlus :size="16" /> Novo Paciente
         </button>
-        <button class="btn btn-primary" id="btn-admitir-paciente" @click="modalAdmitir = true">
-          <Plus :size="16" /> Admitir paciente
-        </button>
       </div>
     </div>
 
     <ModalAdmitirPaciente
       v-if="setor"
       v-model="modalAdmitir"
-      :setor-id="setor._id"
+      :setor-id="setorId"
       :setor-nome="setor.nome"
+      :paciente-inicial="pacienteParaAdmitir"
       @admitido="onPacienteAdmitido"
     />
 
     <ModalNovoPaciente
       v-model="modalNovoPaciente"
+      :setor-id="setorId"
+      :setor-nome="setor?.nome"
       @criado="onPacienteCriado"
     />
 
@@ -85,16 +85,18 @@
       <div v-for="n in 4" :key="n" class="card skeleton-card skeleton-pac"></div>
     </div>
 
-    <div v-else-if="filteredAtendimentos.length === 0" class="empty-state">
+    <div v-else-if="filteredPacientes.length === 0" class="empty-state">
       <UserX :size="36" class="empty-icon" />
       <p>Nenhum paciente encontrado com esses filtros.</p>
     </div>
 
     <div v-else class="patients-list">
       <PacienteCard
-        v-for="atend in filteredAtendimentos"
-        :key="atend._id"
-        :atendimento="atend"
+        v-for="item in filteredPacientes"
+        :key="item.paciente._id"
+        :paciente="item.paciente"
+        :atendimento="item.atendimento"
+        @click="onPacienteClick(item)"
       />
     </div>
 
@@ -111,8 +113,8 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, RouterLink } from 'vue-router';
-import { ArrowLeft, Plus, BedDouble, Users, Search, UserX, UserPlus, CheckCircle } from 'lucide-vue-next';
+import { useRoute, useRouter, RouterLink } from 'vue-router';
+import { ArrowLeft, BedDouble, Users, Search, UserX, UserPlus, CheckCircle } from 'lucide-vue-next';
 import { useHospitalStore } from '@/stores/hospital.js';
 import { usePacienteStore } from '@/stores/paciente.js';
 import Manchester from '@/components/setor/Manchester.vue';
@@ -121,6 +123,7 @@ import ModalAdmitirPaciente from '@/components/setor/ModalAdmitirPaciente.vue';
 import ModalNovoPaciente from '@/components/setor/ModalNovoPaciente.vue';
 
 const route = useRoute();
+const router = useRouter();
 const hospitalStore = useHospitalStore();
 const pacienteStore = usePacienteStore();
 
@@ -129,30 +132,51 @@ const manchesterFilter = ref('todos');
 const modalAdmitir    = ref(false);
 const modalNovoPaciente = ref(false);
 const toastMsg        = ref('');
+const pacienteParaAdmitir = ref(null);
 
 const setor = computed(() => hospitalStore.getSetorById(route.params.id));
+const setorId = computed(() => {
+  const id = setor.value?._id ?? null;
+  if (!id) return null;
+  if (typeof id === 'string') return id;
+  if (typeof id === 'object' && id.$oid) return id.$oid;
+  return String(id);
+});
 
-const filteredAtendimentos = computed(() => {
-  let list = pacienteStore.atendimentos;
+const pacientesComAtendimento = computed(() => {
+  const mapa = new Map();
+  for (const atend of pacienteStore.atendimentos) {
+    if (atend.paciente_id) mapa.set(atend.paciente_id, atend);
+  }
+  return pacienteStore.pacientes.map((paciente) => ({
+    paciente,
+    atendimento: mapa.get(paciente._id) ?? null,
+  }));
+});
+
+const filteredPacientes = computed(() => {
+  let list = pacientesComAtendimento.value;
   if (manchesterFilter.value !== 'todos') {
-    list = list.filter((a) => {
-      const code = a.protocolo_manchester || a.dados_iniciais?.protocolo_manchester;
+    list = list.filter((item) => {
+      const code = item.atendimento?.protocolo_manchester
+        || item.atendimento?.dados_iniciais?.protocolo_manchester;
       return code === manchesterFilter.value;
     });
   }
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase();
-    list = list.filter((a) => {
-      const nome = a.paciente?.nome || a.dados_iniciais?.paciente_nome || '';
-      return nome.toLowerCase().includes(q);
-    });
+    list = list.filter((item) =>
+      item.paciente?.nome?.toLowerCase().includes(q)
+    );
   }
   return list;
 });
 
 async function load() {
   if (!hospitalStore.hospital) await hospitalStore.fetchHospital();
-  await pacienteStore.fetchAtendimentosPorSetor(route.params.id);
+  const id = setorId.value ?? route.params.id;
+  await pacienteStore.fetchAtendimentosPorSetor(id);
+  await pacienteStore.fetchPacientesPorSetor(id);
 }
 
 function onPacienteAdmitido(atend) {
@@ -160,7 +184,7 @@ function onPacienteAdmitido(atend) {
   if (setor.value) {
     setor.value.ocupacao_atual = (setor.value.ocupacao_atual || 0) + 1;
   }
-  
+  pacienteParaAdmitir.value = null;
   toastMsg.value = 'Paciente admitido com sucesso no setor!';
   setTimeout(() => toastMsg.value = '', 4000);
 }
@@ -168,9 +192,20 @@ function onPacienteAdmitido(atend) {
 function onPacienteCriado(paciente) {
   toastMsg.value = `Paciente ${paciente.nome} cadastrado com sucesso!`;
   setTimeout(() => toastMsg.value = '', 4000);
-  
-  // Pode fechar o modal e opcionalmente abrir o modal de admissão:
+
+  // Fecha o modal e oferece admissão imediata se quiser
   modalNovoPaciente.value = false;
+  pacienteParaAdmitir.value = paciente;
+  modalAdmitir.value = true;
+  pacienteStore.fetchPacientesPorSetor(setorId.value ?? route.params.id);
+}
+
+function onPacienteClick(item) {
+  if (item.atendimento?._id) {
+    router.push(`/prontuario/${item.atendimento._id}`);
+    return;
+  }
+  pacienteParaAdmitir.value = item.paciente;
   modalAdmitir.value = true;
 }
 

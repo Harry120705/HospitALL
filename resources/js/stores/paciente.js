@@ -12,6 +12,7 @@ import api from '@/services/api.js';
  */
 export const usePacienteStore = defineStore('paciente', () => {
   const atendimentos     = ref([]);
+  const pacientes        = ref([]);
   const atendimentoAtual = ref(null);
   const loading          = ref(false);
   const error            = ref(null);
@@ -43,6 +44,18 @@ export const usePacienteStore = defineStore('paciente', () => {
       norm.paciente = { ...norm.paciente, _id: _mongoId(norm.paciente) };
     }
     return norm;
+  }
+
+  function _normalizePaciente(p) {
+    return {
+      ...p,
+      _id: _mongoId(p),
+      setor_id: p?.setor_id
+        ? (typeof p.setor_id === 'object' && p.setor_id.$oid
+            ? p.setor_id.$oid
+            : String(p.setor_id))
+        : null,
+    };
   }
 
   // ── Actions ───────────────────────────────────────────────────
@@ -80,6 +93,38 @@ export const usePacienteStore = defineStore('paciente', () => {
       } else {
         error.value = err.response?.data?.message ?? err.message;
       }
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /** Carrega pacientes por setor (criados no setor) */
+  async function fetchPacientesPorSetor(setorId) {
+    loading.value = true;
+    error.value   = null;
+    try {
+      const { data } = await api.get('/pacientes');
+      const lista = Array.isArray(data) ? data : data.data ?? [];
+      pacientes.value = lista
+        .map(_normalizePaciente)
+        .filter((p) => (p.setor_id ?? null) === setorId);
+    } catch (err) {
+      error.value = err.response?.data?.message ?? err.message;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  /** Carrega um paciente pelo ID */
+  async function fetchPaciente(id) {
+    loading.value = true;
+    error.value   = null;
+    try {
+      const { data } = await api.get(`/pacientes/${id}`);
+      return _normalizePaciente(data);
+    } catch (err) {
+      error.value = err.response?.data?.message ?? err.message;
+      return null;
     } finally {
       loading.value = false;
     }
@@ -153,10 +198,13 @@ export const usePacienteStore = defineStore('paciente', () => {
 
   return {
     atendimentos,
+    pacientes,
     atendimentoAtual,
     loading,
     error,
     fetchAtendimentosPorSetor,
+    fetchPacientesPorSetor,
+    fetchPaciente,
     fetchAtendimento,
     admitirPaciente,
     pushEvolucao,

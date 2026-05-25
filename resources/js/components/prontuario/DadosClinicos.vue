@@ -42,6 +42,20 @@
       <p v-else class="dc-empty">Nenhuma alergia registrada</p>
     </div>
 
+    <div class="dc-section">
+      <p class="dc-section__label">
+        <AlertTriangle :size="13" /> Comorbidades
+      </p>
+      <div v-if="clinicos.comorbidades?.length" class="dc-tags">
+        <span
+          v-for="comorbidade in clinicos.comorbidades"
+          :key="comorbidade"
+          class="dc-tag"
+        >{{ comorbidade }}</span>
+      </div>
+      <p v-else class="dc-empty">Nenhuma comorbidade registrada</p>
+    </div>
+
     <!-- NoSQL note -->
     <div class="dc-nosql-note">
       <Info :size="12" />
@@ -58,7 +72,23 @@ const props = defineProps({
   dadosClinicosFixos: { type: Object, default: () => ({}) },
 });
 
-const clinicos = computed(() => props.dadosClinicosFixos ?? {});
+function normalizeList(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter((v) => String(v).trim().length > 0);
+  if (typeof value === 'string') {
+    return value.split(',').map((v) => v.trim()).filter(Boolean);
+  }
+  return [String(value)].filter(Boolean);
+}
+
+const clinicos = computed(() => {
+  const base = props.dadosClinicosFixos ?? {};
+  return {
+    ...base,
+    alergias: normalizeList(base.alergias),
+    comorbidades: normalizeList(base.comorbidades),
+  };
+});
 </script>
 
 <style scoped>

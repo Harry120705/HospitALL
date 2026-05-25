@@ -19,9 +19,9 @@
         <span class="leito-setor">· {{ atendimento.alocacao_leito?.setor ?? '—' }}</span>
       </div>
 
-      <template v-if="atendimento && paciente">
-        <DadosGerais :paciente="paciente" />
-        <DadosClinicos :dadosClinicosFixos="paciente.dados_clinicos_fixos" />
+      <template v-if="atendimento">
+        <DadosGerais :paciente="pacienteView" />
+        <DadosClinicos :dadosClinicosFixos="dadosClinicos" />
       </template>
 
       <template v-else-if="pacienteStore.loading">
@@ -34,10 +34,10 @@
     <section class="prontuario-main">
 
       <!-- Header inline -->
-      <div class="prontuario-main__header" v-if="atendimento && paciente">
+      <div class="prontuario-main__header" v-if="atendimento">
         <div>
           <p class="section-label" style="margin-bottom:2px">Evoluções do Atendimento</p>
-          <h1 class="prontuario-main__title">{{ paciente.nome }}</h1>
+          <h1 class="prontuario-main__title">{{ pacienteView.nome }}</h1>
         </div>
         <div class="prontuario-actions">
           <span class="badge" :style="manchesterStyle">
@@ -87,7 +87,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
 import { ArrowLeft, BedDouble, Plus, FileText, AlertCircle, FileX } from 'lucide-vue-next';
 import { usePacienteStore } from '@/stores/paciente.js';
@@ -106,6 +106,16 @@ const modalEvolucao = ref(false);
 
 const atendimento = computed(() => pacienteStore.atendimentoAtual);
 const paciente    = computed(() => atendimento.value?.paciente ?? null);
+const pacienteView = computed(() =>
+  paciente.value
+  ?? {
+    nome: atendimento.value?.dados_iniciais?.paciente_nome ?? 'Paciente',
+    data_nascimento: null,
+  }
+);
+const dadosClinicos = computed(() =>
+  pacienteView.value?.dados_clinicos_fixos ?? pacienteView.value ?? {}
+);
 
 function onEvolucaoCriada(ev) {
   // Store já insere no topo do array reativamente
@@ -141,6 +151,25 @@ onMounted(async () => {
   }
   await pacienteStore.fetchAtendimento(route.params.atendimentoId);
 });
+
+async function hydratePaciente(atual) {
+  if (!atual?.paciente_id) return;
+  const pacienteCarregado = await pacienteStore.fetchPaciente(atual.paciente_id);
+  if (pacienteCarregado && pacienteStore.atendimentoAtual?._id === atual._id) {
+    pacienteStore.atendimentoAtual.paciente = pacienteCarregado;
+  }
+}
+
+watch(
+  () => atendimento.value,
+  (atual) => {
+    if (!atual) return;
+    if (!atual.paciente || !atual.paciente?.contato) {
+      hydratePaciente(atual);
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
@@ -150,8 +179,9 @@ onMounted(async () => {
   grid-template-columns: 300px 1fr;
   gap: 24px;
   padding: 28px 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  max-width: 100%;
+  width: 100%;
+  margin: 0;
   min-height: calc(100vh - 64px);
   align-items: start;
 }
