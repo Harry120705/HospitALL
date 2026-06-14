@@ -54,7 +54,21 @@
             </div>
           </div>
           <!-- View Mode -->
-          <p v-else class="tl-descricao">{{ ev.descricao }}</p>
+          <div v-else>
+            <p 
+              class="tl-descricao" 
+              :class="{ 'line-clamp-2': !expandedCards[ev.id] && ev.descricao?.length > 150 }"
+            >
+              {{ ev.descricao }}
+            </p>
+            <button 
+              v-if="ev.descricao?.length > 150" 
+              class="btn-expand-text" 
+              @click="toggleCard(ev.id)"
+            >
+              {{ expandedCards[ev.id] ? 'Esconder detalhes' : 'Ler toda a evolução...' }}
+            </button>
+          </div>
         </div>
       </div>
       
@@ -87,6 +101,11 @@ const editingId = ref(null);
 const editContent = ref('');
 const savingEdit = ref(false);
 const expanded = ref(false);
+const expandedCards = ref({});
+
+function toggleCard(id) {
+  expandedCards.value[id] = !expandedCards.value[id];
+}
 
 const visibleEvolucoes = computed(() => {
   if (expanded.value) return props.evolucoes;
@@ -225,6 +244,28 @@ function tipoLabel(tipo) {
   line-height: 1.6;
   word-break: break-word;
   white-space: pre-wrap;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.btn-expand-text {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 4px;
+}
+
+.btn-expand-text:hover {
+  text-decoration: underline;
 }
 
 .tl-time-actions {
