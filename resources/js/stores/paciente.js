@@ -34,11 +34,18 @@ export const usePacienteStore = defineStore('paciente', () => {
   }
 
   function _normalizePaciente(p) {
-    return {
+    const norm = {
       ...p,
       _id: mongoId(p),
       setor_id: mongoId(p?.setor_id),
     };
+    if (norm.resumo_ultimas_visitas && Array.isArray(norm.resumo_ultimas_visitas)) {
+      norm.resumo_ultimas_visitas = norm.resumo_ultimas_visitas.map(visita => ({
+        ...visita,
+        atendimento_id: mongoId(visita.atendimento_id)
+      }));
+    }
+    return norm;
   }
 
   // ── Actions ───────────────────────────────────────────────────
@@ -128,6 +135,41 @@ export const usePacienteStore = defineStore('paciente', () => {
     }
   }
 
+  async function darAlta(atendimentoId) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const { data } = await api.put(`/atendimentos/${atendimentoId}`, { status: 'ALTA' });
+      if (atendimentoAtual.value && atendimentoAtual.value._id === atendimentoId) {
+        atendimentoAtual.value.status = 'ALTA';
+      }
+      return data;
+    } catch (err) {
+      error.value = err.response?.data?.message ?? err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function editarPaciente(id, payload) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const { data } = await api.put(`/pacientes/${id}`, payload);
+      // Atualiza estado local se o paciente em exibição for o editado
+      if (atendimentoAtual.value?.paciente?._id === id) {
+        atendimentoAtual.value.paciente = { ...atendimentoAtual.value.paciente, ...data };
+      }
+      return data;
+    } catch (err) {
+      error.value = err.response?.data?.message ?? err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
   /**
    * Admite um novo paciente → POST /api/atendimentos
    * Payload esperado: { paciente_id, hospital_id, setor_id, leito, protocolo_manchester, queixa_principal }
@@ -179,6 +221,20 @@ export const usePacienteStore = defineStore('paciente', () => {
     return data;
   }
 
+  async function editarEvolucao(idEvolucao, descricao) {
+    if (!atendimentoAtual.value) return;
+    try {
+      await api.put(`/atendimentos/${atendimentoAtual.value._id}/evolucoes/${idEvolucao}`, { descricao });
+      const idx = atendimentoAtual.value.evolucoes_medicas?.findIndex(e => e.id === idEvolucao);
+      if (idx !== undefined && idx !== -1) {
+        atendimentoAtual.value.evolucoes_medicas[idx].descricao = descricao;
+      }
+    } catch (err) {
+      error.value = err.response?.data?.message ?? err.message;
+      throw err;
+    }
+  }
+
   return {
     atendimentos,
     pacientes,
@@ -189,7 +245,10 @@ export const usePacienteStore = defineStore('paciente', () => {
     fetchPacientesPorSetor,
     fetchPaciente,
     fetchAtendimento,
+    darAlta,
+    editarPaciente,
     admitirPaciente,
     pushEvolucao,
+    editarEvolucao,
   };
 });

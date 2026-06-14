@@ -32,6 +32,23 @@
     <!-- Modal Nova Área -->
     <ModalNovaArea v-model="modalArea" @criado="onAreaCriada" />
 
+    <!-- Modal Editar Área -->
+    <ModalEditarArea v-model="modalEditarArea" :initialData="areaToEdit" @editado="onAreaEditada" />
+
+    <!-- Modal Confirmacao/Edicao -->
+    <ModalConfirmacao
+      v-model="modalConfirmOpen"
+      :title="modalConfirmTitle"
+      :message="modalConfirmMessage"
+      :type="modalConfirmType"
+      :confirm-text="modalConfirmBtn"
+      :with-input="modalConfirmWithInput"
+      :initial-value="modalConfirmInitial"
+      :input-placeholder="modalConfirmPlaceholder"
+      :loading="modalConfirmLoading"
+      @confirm="handleConfirm"
+    />
+
     <!-- Stat Cards -->
     <div class="stats-grid">
       <template v-if="!hospitalStore.loading">
@@ -88,13 +105,33 @@
 import { ref, computed, onMounted } from 'vue';
 import { Plus, BedDouble, Users, TrendingUp, Search } from 'lucide-vue-next';
 import { useHospitalStore } from '@/stores/hospital.js';
+import { useToastStore } from '@/stores/toast.js';
 import StatCard from '@/components/dashboard/StatCard.vue';
 import AreaCard from '@/components/dashboard/AreaCard.vue';
 import ModalNovaArea from '@/components/dashboard/ModalNovaArea.vue';
+import ModalEditarArea from '@/components/dashboard/ModalEditarArea.vue';
+import ModalConfirmacao from '@/components/ui/ModalConfirmacao.vue';
 
 const hospitalStore = useHospitalStore();
+const toastStore = useToastStore();
 const modalArea = ref(false);
+const modalEditarArea = ref(false);
+const areaToEdit = ref({});
 const searchQuery = ref('');
+
+// Modal Genérico state
+const modalConfirmOpen = ref(false);
+const modalConfirmTitle = ref('');
+const modalConfirmMessage = ref('');
+const modalConfirmType = ref('primary');
+const modalConfirmBtn = ref('Confirmar');
+const modalConfirmWithInput = ref(false);
+const modalConfirmInitial = ref('');
+const modalConfirmPlaceholder = ref('');
+const modalConfirmLoading = ref(false);
+
+let pendingAction = null;
+let pendingSetor = null;
 
 const filteredSetores = computed(() => {
   if (!searchQuery.value) return hospitalStore.setores;
@@ -107,19 +144,49 @@ onMounted(() => {
 });
 
 function onAreaCriada(setor) {
-  // Store já atualiza setores reativamente — nada a fazer aqui
-  console.info('Setor criado:', setor.nome);
+  toastStore.success(`Área ${setor.nome} cadastrada com sucesso!`);
 }
 
 function onEdit(setor)   { 
-  alert(`Funcionalidade de Editar Área (${setor.nome}) em desenvolvimento pelo backend.`); 
+  areaToEdit.value = setor;
+  modalEditarArea.value = true;
 }
+
 function onReport(setor) { 
-  alert(`Relatório da Área (${setor.nome}) em desenvolvimento.`); 
+  toastStore.success(`Gerando relatório de ${setor.nome}...`);
 }
+
+function onAreaEditada(setor) {
+  // O modal já dispara o toast, podemos adicionar lógica extra se necessário.
+}
+
 function onDelete(setor) { 
-  if(confirm(`Tem certeza que deseja excluir a área ${setor.nome}? Essa ação precisará de um endpoint no backend.`)) {
-    alert('A exclusão precisa ser implementada na API do backend.');
+  pendingAction = 'delete';
+  pendingSetor = setor;
+  modalConfirmTitle.value = 'Excluir Área';
+  modalConfirmMessage.value = `Atenção: Tem certeza que deseja excluir permanentemente a área ${setor.nome}? Esta ação não pode ser desfeita.`;
+  modalConfirmType.value = 'danger';
+  modalConfirmBtn.value = 'Excluir Permanentemente';
+  modalConfirmWithInput.value = false;
+  modalConfirmOpen.value = true;
+}
+
+async function handleConfirm(inputValue) {
+  if (!pendingSetor) return;
+  modalConfirmLoading.value = true;
+
+  try {
+    if (pendingAction === 'delete') {
+      await hospitalStore.excluirSetor(pendingSetor._id);
+      toastStore.success('Área excluída com sucesso!');
+    }
+    modalConfirmOpen.value = false;
+  } catch(e) {
+    toastStore.error('Erro: ' + e.message);
+  } finally {
+    modalConfirmLoading.value = false;
+    pendingAction = null;
+    pendingSetor = null;
   }
 }
 </script>

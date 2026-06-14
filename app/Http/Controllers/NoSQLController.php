@@ -46,6 +46,66 @@ class NoSQLController extends Controller
         return response()->json($novoSetor, 201);
     }
 
+    /**
+     * PUT /api/hospitais/{id}/setores/{idSetor}
+     * Edita o nome de um setor usando o operador posicional $ do MongoDB.
+     */
+    public function editarSetor(Request $request, $id, $idSetor)
+    {
+        $request->validate([
+            'nome'             => 'required|string|max:100',
+            'descricao'        => 'required|string|max:255',
+            'capacidade_maxima'=> 'required|integer|min:1',
+            'icone'            => 'nullable|string|max:50',
+        ]);
+
+        $hospital = Hospital::findOrFail($id);
+
+        $updateData = [
+            'setores.$.nome'              => $request->nome,
+            'setores.$.descricao'         => $request->descricao,
+            'setores.$.capacidade_maxima' => (int) $request->capacidade_maxima,
+            'setores.$.icone'             => $request->input('icone', 'bed-double'),
+        ];
+
+        // Atualiza usando o operador posicional para '_id'
+        $updated = Hospital::where('_id', $id)
+            ->where('setores._id', $idSetor)
+            ->update($updateData);
+
+        // Fallback: Atualiza usando o operador posicional para o antigo 'id_setor'
+        if (!$updated) {
+            Hospital::where('_id', $id)
+                ->where('setores.id_setor', $idSetor)
+                ->update($updateData);
+        }
+
+        // Retornar o setor atualizado simulado
+        return response()->json([
+            '_id'               => $idSetor,
+            'nome'              => $request->nome,
+            'descricao'         => $request->descricao,
+            'capacidade_maxima' => (int) $request->capacidade_maxima,
+            'icone'             => $updateData['setores.$.icone']
+        ], 200);
+    }
+
+    /**
+     * DELETE /api/hospitais/{id}/setores/{idSetor}
+     * Remove o setor do array usando $pull.
+     */
+    public function removerSetor(Request $request, $id, $idSetor)
+    {
+        $hospital = Hospital::findOrFail($id);
+
+        // Remove do array embeddado usando o pull do query builder
+        // Executa tanto para '_id' (novo esquema) quanto para 'id_setor' (esquema legado)
+        Hospital::where('_id', $id)->pull('setores', ['_id' => $idSetor]);
+        Hospital::where('_id', $id)->pull('setores', ['id_setor' => $idSetor]);
+
+        return response()->json(['message' => 'Setor removido com sucesso'], 200);
+    }
+
     // ─── ATENDIMENTOS ─────────────────────────────────────────────
 
     /**
@@ -75,6 +135,25 @@ class NoSQLController extends Controller
         $atendimento->push('evolucoes_medicas', $novaEvolucao);
 
         return response()->json($novaEvolucao, 201);
+    }
+
+    /**
+     * PUT /api/atendimentos/{id}/evolucoes/{idEvolucao}
+     * Edita a descrição de uma evolução médica existente.
+     */
+    public function editarEvolucao(Request $request, $id, $idEvolucao)
+    {
+        $request->validate([
+            'descricao' => 'required|string',
+        ]);
+
+        $atendimento = Atendimento::findOrFail($id);
+
+        Atendimento::where('_id', $id)
+            ->where('evolucoes_medicas.id', $idEvolucao)
+            ->update(['evolucoes_medicas.$.descricao' => $request->descricao]);
+
+        return response()->json(['id' => $idEvolucao, 'descricao' => $request->descricao], 200);
     }
 
     /**

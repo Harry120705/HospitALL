@@ -2,10 +2,13 @@
   <div class="card dados-gerais">
     <div class="dg-header">
       <div class="dg-avatar">{{ initials }}</div>
-      <div>
+      <div style="flex: 1">
         <h2 class="dg-nome">{{ paciente.nome }}</h2>
         <p class="dg-sub">{{ idade }} anos · {{ paciente.data_nascimento ? formatDate(paciente.data_nascimento) : '—' }}</p>
       </div>
+      <button class="btn-icon-edit" @click="$emit('edit')" title="Editar Paciente">
+        <Pencil :size="14" />
+      </button>
     </div>
 
     <div class="dg-divider"></div>
@@ -25,8 +28,10 @@
 
 <script setup>
 import { computed } from 'vue';
-import { User, Phone } from 'lucide-vue-next';
+import { User, Phone, Pencil } from 'lucide-vue-next';
 import { formatDate, calcularIdade } from '@/utils/date.js';
+
+const emit = defineEmits(['edit']);
 
 const props = defineProps({
   paciente: { type: Object, required: true },
@@ -123,5 +128,23 @@ dd {
   font-weight: 500;
   color: var(--color-text-primary);
   margin-left: 0;
+}
+
+.btn-icon-edit {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-icon-edit:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
 }
 </style>

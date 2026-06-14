@@ -27,10 +27,12 @@
         <!-- User -->
         <div class="dropdown" ref="userDropdownRef">
           <button class="user-menu-btn" id="btn-user-menu" @click="toggleUserMenu">
-            <div class="avatar avatar--green">GM</div>
+            <div class="avatar" :class="appStore.userRole === 'MEDICO' ? 'avatar--green' : 'avatar--blue'">
+              {{ appStore.userRole === 'MEDICO' ? 'GM' : 'RC' }}
+            </div>
             <div class="user-info">
-              <span class="user-name">Dr. Gabriel Martins</span>
-              <span class="user-role">Médico • CRM 142.880</span>
+              <span class="user-name">{{ appStore.userRole === 'MEDICO' ? 'Dr. Gabriel Martins' : 'Recepção Central' }}</span>
+              <span class="user-role">{{ appStore.userRole === 'MEDICO' ? 'Médico • CRM 142.880' : 'Recepcionista' }}</span>
             </div>
             <ChevronDown :size="16" class="chevron" :class="{ 'chevron--open': userMenuOpen }" />
           </button>
@@ -40,9 +42,9 @@
               <RouterLink to="/" class="dropdown-item" @click="userMenuOpen = false">
                 <User :size="15" /> Meu Perfil
               </RouterLink>
-              <RouterLink to="/" class="dropdown-item" @click="userMenuOpen = false">
-                <Settings :size="15" /> Configurações
-              </RouterLink>
+              <button class="dropdown-item" @click="toggleRole">
+                <Settings :size="15" /> Mudar para {{ appStore.userRole === 'MEDICO' ? 'RECEPCIONISTA' : 'MÉDICO' }}
+              </button>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item danger">
                 <LogOut :size="15" /> Sair
@@ -64,13 +66,20 @@ import {
   LogOut, X,
 } from 'lucide-vue-next';
 import { useHospitalStore } from '@/stores/hospital.js';
+import { useAppStore } from '@/stores/app.js';
 
 const hospitalStore = useHospitalStore();
+const appStore = useAppStore();
 const userMenuOpen  = ref(false);
 const userDropdownRef = ref(null);
 
 function toggleUserMenu() {
   userMenuOpen.value = !userMenuOpen.value;
+}
+
+function toggleRole() {
+  appStore.userRole = appStore.userRole === 'MEDICO' ? 'RECEPCIONISTA' : 'MEDICO';
+  userMenuOpen.value = false;
 }
 
 function toggleNotif() {
@@ -241,6 +250,10 @@ onUnmounted(() => {
 
 .avatar--green {
   background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
+}
+
+.avatar--blue {
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
 }
 
 .user-info {

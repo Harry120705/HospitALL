@@ -1,15 +1,20 @@
 <template>
   <div class="card dados-clinicos">
-    <h3 class="dc-title">
-      <Stethoscope :size="15" /> Dados Clínicos Fixos
-    </h3>
+    <div class="dc-header">
+      <h3 class="dc-title">
+        <Stethoscope :size="15" /> Dados Clínicos Fixos
+      </h3>
+      <button class="btn-icon-edit" @click="$emit('edit')" title="Editar Dados Clínicos">
+        <Pencil :size="14" />
+      </button>
+    </div>
 
     <div class="dc-grid">
       <!-- Tipo sanguíneo -->
       <div class="dc-chip dc-chip--blood">
         <Droplets :size="14" />
         <span class="dc-chip__label">Tipo Sanguíneo</span>
-        <span class="dc-chip__value">{{ clinicos.tipo_sanguineo ?? '—' }}</span>
+        <span class="dc-chip__value">{{ clinicos.tipagem_sanguinea ?? '—' }}</span>
       </div>
 
       <!-- Peso -->
@@ -66,7 +71,9 @@
 
 <script setup>
 import { computed } from 'vue';
-import { Stethoscope, Droplets, Scale, Ruler, AlertTriangle, Info } from 'lucide-vue-next';
+import { Stethoscope, Droplets, Scale, Ruler, AlertTriangle, Info, Pencil } from 'lucide-vue-next';
+
+const emit = defineEmits(['edit']);
 
 const props = defineProps({
   dadosClinicosFixos: { type: Object, default: () => ({}) },
@@ -94,6 +101,13 @@ const clinicos = computed(() => {
 <style scoped>
 .dados-clinicos { padding: 20px; }
 
+.dc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
 .dc-title {
   display: flex;
   align-items: center;
@@ -101,7 +115,24 @@ const clinicos = computed(() => {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text-primary);
-  margin-bottom: 14px;
+}
+
+.btn-icon-edit {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-icon-edit:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
 }
 
 .dc-grid {

@@ -24,9 +24,37 @@
               <span class="tl-medico">{{ ev.medico }}</span>
               <span class="tl-crm">CRM {{ ev.crm }}</span>
             </div>
-            <time class="tl-time">{{ formatDateTime(ev.data_hora) }}</time>
+            <div class="tl-time-actions">
+              <time class="tl-time">{{ formatDateTime(ev.data_hora) }}</time>
+              <button 
+                v-if="appStore.userRole !== 'RECEPCIONISTA'" 
+                class="btn-icon-edit" 
+                @click="startEdit(ev)" 
+                title="Editar"
+              >
+                <Pencil :size="13" />
+              </button>
+            </div>
           </div>
-          <p class="tl-descricao">{{ ev.descricao }}</p>
+
+          <!-- Edit Mode -->
+          <div v-if="editingId === ev.id" class="tl-edit-mode">
+            <textarea
+              v-model="editContent"
+              class="form-input"
+              rows="3"
+            ></textarea>
+            <div class="tl-edit-actions">
+              <button class="btn btn-ghost btn-sm" @click="cancelEdit" :disabled="savingEdit">Cancelar</button>
+              <button class="btn btn-primary btn-sm" @click="saveEdit(ev.id)" :disabled="savingEdit">
+                <Loader2 v-if="savingEdit" :size="14" class="spin" />
+                <Save v-else :size="14" />
+                Salvar
+              </button>
+            </div>
+          </div>
+          <!-- View Mode -->
+          <p v-else class="tl-descricao">{{ ev.descricao }}</p>
         </div>
       </div>
     </div>
@@ -34,12 +62,48 @@
 </template>
 
 <script setup>
-import { Stethoscope } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { Stethoscope, Pencil, Save, Loader2 } from 'lucide-vue-next';
 import { formatDateTime } from '@/utils/date.js';
+import { usePacienteStore } from '@/stores/paciente.js';
+import { useToastStore } from '@/stores/toast.js';
+import { useAppStore } from '@/stores/app.js';
 
 const props = defineProps({
   evolucoes: { type: Array, default: () => [] },
 });
+
+const pacienteStore = usePacienteStore();
+const toastStore = useToastStore();
+const appStore = useAppStore();
+
+const editingId = ref(null);
+const editContent = ref('');
+const savingEdit = ref(false);
+
+function startEdit(ev) {
+  editingId.value = ev.id;
+  editContent.value = ev.descricao;
+}
+
+function cancelEdit() {
+  editingId.value = null;
+  editContent.value = '';
+}
+
+async function saveEdit(id) {
+  if (!editContent.value.trim()) return;
+  savingEdit.value = true;
+  try {
+    await pacienteStore.editarEvolucao(id, editContent.value);
+    toastStore.success('Evolução atualizada com sucesso!');
+    editingId.value = null;
+  } catch (err) {
+    toastStore.error('Erro ao atualizar: ' + err.message);
+  } finally {
+    savingEdit.value = false;
+  }
+}
 
 const TIPO_LABELS = {
   evolucao: 'Evolução',
@@ -133,5 +197,72 @@ function tipoLabel(tipo) {
   font-size: 14px;
   color: var(--color-text-secondary);
   line-height: 1.6;
+}
+
+.tl-time-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon-edit {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-icon-edit:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+.tl-edit-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.form-input {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  resize: vertical;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(14 165 233 / 0.12);
+}
+
+.tl-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

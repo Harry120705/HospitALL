@@ -13,11 +13,11 @@
         </button>
         <Transition name="dropdown-fade">
           <div v-if="menuOpen" class="dropdown-menu area-card__menu">
-            <button class="dropdown-item" @click.stop="emit('edit', setor); menuOpen = false">
+            <button v-if="appStore.userRole !== 'RECEPCIONISTA'" class="dropdown-item" @click.stop="emit('edit', setor); menuOpen = false">
               <Pencil :size="14" /> Editar área
             </button>
-            <div class="dropdown-divider"></div>
-            <button class="dropdown-item danger" @click.stop="emit('delete', setor); menuOpen = false">
+            <div v-if="appStore.userRole !== 'RECEPCIONISTA'" class="dropdown-divider"></div>
+            <button v-if="appStore.userRole !== 'RECEPCIONISTA'" class="dropdown-item danger" @click.stop="emit('delete', setor); menuOpen = false">
               <Trash2 :size="14" /> Excluir
             </button>
           </div>
@@ -59,6 +59,9 @@ import {
   Baby, Scissors, Activity, AlarmCheck, HeartHandshake,
   HeartPulse, Bone, Brain, BedDouble, Eye, Stethoscope,
 } from 'lucide-vue-next';
+import { useAppStore } from '@/stores/app.js';
+
+const appStore = useAppStore();
 
 const props = defineProps({
   setor: { type: Object, required: true },

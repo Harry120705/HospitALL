@@ -111,6 +111,17 @@
           />
         </div>
       </div>
+      
+      <div class="form-row">
+        <label class="form-label" for="np-contato-parentesco">Parentesco do Contato</label>
+        <input
+          id="np-contato-parentesco"
+          v-model="form.contato_parentesco"
+          type="text"
+          class="form-input"
+          placeholder="Ex: Mãe, Cônjuge, Filho..."
+        />
+      </div>
 
       <div class="form-row">
         <label class="form-label" for="np-tipo-sanguineo">Tipo Sanguíneo *</label>
@@ -228,6 +239,7 @@ const form = ref({
   telefone: '',
   contato_emergencia_nome: '',
   contato_emergencia_telefone: '',
+  contato_parentesco: '',
   tipo_sanguineo: '',
   peso_kg: null,
   altura_cm: null,
@@ -246,13 +258,18 @@ async function submit() {
       genero: form.value.genero,
       cartao_sus: form.value.cartao_sus,
       telefone: form.value.telefone,
-      contato_emergencia_nome: form.value.contato_emergencia_nome,
-      contato_emergencia_telefone: form.value.contato_emergencia_telefone,
-      tipo_sanguineo: form.value.tipo_sanguineo,
-      peso_kg: form.value.peso_kg,
-      altura_cm: form.value.altura_cm,
-      alergias: form.value.alergias,
-      comorbidades: form.value.comorbidades,
+      contato: {
+        nome: form.value.contato_emergencia_nome,
+        telefone: form.value.contato_emergencia_telefone,
+        parentesco: form.value.contato_parentesco || 'Não informado',
+      },
+      dados_clinicos_fixos: {
+        tipagem_sanguinea: form.value.tipo_sanguineo,
+        peso_kg: form.value.peso_kg,
+        altura_cm: form.value.altura_cm,
+        alergias: form.value.alergias,
+        comorbidades: form.value.comorbidades,
+      },
       status_paciente: 'Novo Paciente',
       setor_id: props.setorId,
       setor_nome: props.setorNome,
@@ -282,6 +299,7 @@ function resetForm() {
     telefone: '',
     contato_emergencia_nome: '',
     contato_emergencia_telefone: '',
+    contato_parentesco: '',
     tipo_sanguineo: '',
     peso_kg: null,
     altura_cm: null,

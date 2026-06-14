@@ -20,8 +20,9 @@
       </div>
 
       <template v-if="atendimento">
-        <DadosGerais :paciente="pacienteView" />
-        <DadosClinicos :dadosClinicosFixos="dadosClinicos" />
+        <DadosGerais :paciente="pacienteView" @edit="modalEditarPaciente = true" />
+        <DadosClinicos :dadosClinicosFixos="dadosClinicos" @edit="modalEditarPaciente = true" />
+        <ResumoVisitas :visitas="pacienteView.resumo_ultimas_visitas" />
       </template>
 
       <template v-else-if="pacienteStore.loading">
@@ -44,7 +45,12 @@
             <span class="badge-dot" :style="{ background: manchesterColor }"></span>
             {{ manchesterLabel }}
           </span>
-          <button class="btn btn-primary" id="btn-nova-evolucao" @click="modalEvolucao = true">
+
+          <button v-if="appStore.userRole !== 'RECEPCIONISTA' && atendimento.status !== 'ALTA'" class="btn btn-outline" @click="confirmarAlta">
+            <LogOut :size="15" /> Dar Alta
+          </button>
+
+          <button v-if="appStore.userRole !== 'RECEPCIONISTA' && atendimento.status !== 'ALTA'" class="btn btn-primary" id="btn-nova-evolucao" @click="modalEvolucao = true">
             <Plus :size="15" /> Nova evolução
           </button>
         </div>
@@ -56,6 +62,24 @@
         v-model="modalEvolucao"
         :atendimento-id="atendimento._id"
         @criada="onEvolucaoCriada"
+      />
+
+      <!-- Modal Confirmar Alta -->
+      <ModalConfirmacao
+        v-model="modalAltaOpen"
+        title="Dar Alta"
+        message="Tem certeza que deseja registrar a alta e encerrar o atendimento deste paciente?"
+        type="primary"
+        confirm-text="Confirmar Alta"
+        :loading="loadingAlta"
+        @confirm="realizarAlta"
+      />
+
+      <!-- Modal Editar Paciente -->
+      <ModalEditarPaciente
+        v-if="paciente"
+        v-model="modalEditarPaciente"
+        :paciente="paciente"
       />
 
       <!-- Queixa principal -->
@@ -89,21 +113,31 @@
 <script setup>
 import { computed, ref, onMounted, watch } from 'vue';
 import { useRoute, RouterLink } from 'vue-router';
-import { ArrowLeft, BedDouble, Plus, FileText, AlertCircle, FileX } from 'lucide-vue-next';
+import { ArrowLeft, BedDouble, Plus, FileText, AlertCircle, FileX, LogOut } from 'lucide-vue-next';
 import { usePacienteStore } from '@/stores/paciente.js';
 import { useHospitalStore } from '@/stores/hospital.js';
+import { useToastStore } from '@/stores/toast.js';
 import { MANCHESTER_MAP } from '@/constants/manchester.js';
 import DadosGerais from '@/components/prontuario/DadosGerais.vue';
 import DadosClinicos from '@/components/prontuario/DadosClinicos.vue';
+import ResumoVisitas from '@/components/prontuario/ResumoVisitas.vue';
 import TimelineEvolution from '@/components/prontuario/TimelineEvolution.vue';
 import TimelineEnfermagem from '@/components/prontuario/TimelineEnfermagem.vue';
 import ModalNovaEvolucao from '@/components/prontuario/ModalNovaEvolucao.vue';
+import ModalConfirmacao from '@/components/ui/ModalConfirmacao.vue';
+import ModalEditarPaciente from '@/components/prontuario/ModalEditarPaciente.vue';
+import { useAppStore } from '@/stores/app.js';
 
 const route = useRoute();
 const pacienteStore = usePacienteStore();
 const hospitalStore = useHospitalStore();
+const toastStore = useToastStore();
+const appStore = useAppStore();
 
 const modalEvolucao = ref(false);
+const modalAltaOpen = ref(false);
+const modalEditarPaciente = ref(false);
+const loadingAlta = ref(false);
 
 const atendimento = computed(() => pacienteStore.atendimentoAtual);
 const paciente    = computed(() => atendimento.value?.paciente ?? null);
@@ -121,6 +155,23 @@ const dadosClinicos = computed(() =>
 function onEvolucaoCriada(ev) {
   // Store já insere no topo do array reativamente
   console.info('Evolução registrada:', ev.id);
+}
+
+function confirmarAlta() {
+  modalAltaOpen.value = true;
+}
+
+async function realizarAlta() {
+  loadingAlta.value = true;
+  try {
+    await pacienteStore.darAlta(atendimento.value._id);
+    toastStore.success('Alta registrada com sucesso!');
+    modalAltaOpen.value = false;
+  } catch (e) {
+    toastStore.error('Erro ao registrar alta: ' + e.message);
+  } finally {
+    loadingAlta.value = false;
+  }
 }
 
 const backLink = computed(() => {
