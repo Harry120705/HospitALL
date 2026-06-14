@@ -10,7 +10,7 @@
 
     <div v-else class="timeline">
       <div
-        v-for="ev in evolucoes"
+        v-for="ev in visibleEvolucoes"
         :key="ev.id"
         class="timeline-item"
       >
@@ -57,12 +57,18 @@
           <p v-else class="tl-descricao">{{ ev.descricao }}</p>
         </div>
       </div>
+      
+      <div v-if="evolucoes.length > 4" class="tl-show-more">
+        <button class="btn btn-ghost tl-btn-more" @click="expanded = !expanded">
+          {{ expanded ? 'Ocultar evoluções antigas' : `Ver mais evoluções (${evolucoes.length - 4})` }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Stethoscope, Pencil, Save, Loader2 } from 'lucide-vue-next';
 import { formatDateTime } from '@/utils/date.js';
 import { usePacienteStore } from '@/stores/paciente.js';
@@ -80,6 +86,12 @@ const appStore = useAppStore();
 const editingId = ref(null);
 const editContent = ref('');
 const savingEdit = ref(false);
+const expanded = ref(false);
+
+const visibleEvolucoes = computed(() => {
+  if (expanded.value) return props.evolucoes;
+  return props.evolucoes.slice(0, 4);
+});
 
 function startEdit(ev) {
   editingId.value = ev.id;
@@ -138,6 +150,20 @@ function tipoLabel(tipo) {
 }
 
 /* Timeline item */
+.tl-show-more {
+  display: flex;
+  justify-content: center;
+  padding-top: 12px;
+}
+.tl-btn-more {
+  width: 100%;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.tl-btn-more:hover {
+  background: var(--color-bg);
+}
+
 .tl-card {
   padding: 14px 16px;
   display: flex;
@@ -197,6 +223,8 @@ function tipoLabel(tipo) {
   font-size: 14px;
   color: var(--color-text-secondary);
   line-height: 1.6;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .tl-time-actions {

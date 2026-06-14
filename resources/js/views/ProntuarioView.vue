@@ -165,6 +165,19 @@ async function realizarAlta() {
   loadingAlta.value = true;
   try {
     await pacienteStore.darAlta(atendimento.value._id);
+    
+    // Decrementa a ocupação do setor localmente para atualizar a interface imediatamente
+    const idSetor = atendimento.value?.alocacao_leito?.setor_id;
+    if (idSetor && hospitalStore.setores) {
+      const setorObj = hospitalStore.setores.find(s => {
+        const sid = s._id?.$oid || s._id || s.id;
+        return String(sid) === String(idSetor);
+      });
+      if (setorObj && setorObj.ocupacao_atual > 0) {
+        setorObj.ocupacao_atual--;
+      }
+    }
+
     toastStore.success('Alta registrada com sucesso!');
     modalAltaOpen.value = false;
   } catch (e) {
@@ -286,6 +299,7 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0; /* Impede que o conteúdo flex quebre o grid para fora da tela */
 }
 
 .prontuario-main__header {

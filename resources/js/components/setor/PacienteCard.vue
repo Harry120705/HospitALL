@@ -17,12 +17,15 @@
         <h4 class="pac-name">{{ nomePaciente }}</h4>
         <!-- Manchester Badge -->
         <span
-          v-if="temAtendimento"
+          v-if="temAtendimento && atendimento.status !== 'ALTA'"
           class="badge"
           :style="{ background: manchesterBg + '22', color: manchesterColor }"
         >
           <span class="badge-dot" :style="{ background: manchesterColor }"></span>
           {{ manchesterLabel }}
+        </span>
+        <span v-else-if="temAtendimento && atendimento.status === 'ALTA'" class="badge badge--alta">
+          Alta Médica
         </span>
         <span v-else class="badge badge--muted">Sem leito</span>
       </div>
@@ -139,6 +142,12 @@ const cardId = computed(() => props.atendimento?._id ?? props.paciente?._id ?? '
   background: #FEF3C7;
   color: #B45309;
   border: 1px solid #FDE68A;
+}
+
+.badge--alta {
+  background: #F3F4F6;
+  color: #4B5563;
+  border: 1px solid #E5E7EB;
 }
 
 .badge-dot {

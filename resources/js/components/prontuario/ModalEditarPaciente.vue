@@ -8,8 +8,23 @@
   >
     <form @submit.prevent="submit" class="modal-form">
       
+      <!-- Seção Pessoal -->
+      <h3 class="section-title">Dados Pessoais</h3>
+      
+      <div class="form-row">
+        <label class="form-label" for="ep-nome">Nome Completo</label>
+        <input
+          id="ep-nome"
+          v-model="form.nome"
+          type="text"
+          class="form-input"
+          placeholder="Ex: João da Silva"
+          required
+        />
+      </div>
+
       <!-- Seção Contato -->
-      <h3 class="section-title">Contato e Emergência</h3>
+      <h3 class="section-title mt-2">Contato e Emergência</h3>
       
       <div class="form-row">
         <label class="form-label" for="ep-telefone">Telefone / Celular</label>
@@ -153,6 +168,7 @@ watch(() => props.modelValue, (v) => {
   if (v && props.paciente) {
     const p = props.paciente;
     form.value = {
+      nome: p.nome || '',
       telefone: p.telefone || '',
       contato: {
         nome: p.contato?.nome || p.contato_emergencia_nome || '',
@@ -180,6 +196,7 @@ const loading  = ref(false);
 const errorMsg = ref('');
 
 const form = ref({
+  nome: '',
   telefone: '',
   contato: { nome: '', telefone: '' },
   dados_clinicos_fixos: { tipagem_sanguinea: '', peso_kg: null, altura_cm: null, alergias: '', comorbidades: '' }

@@ -1,61 +1,39 @@
-# Plano de Implementação
+# Implementação da Readmissão de Pacientes
 
-Este plano detalha as etapas para corrigir os bugs de persistência visual, adequar as stores do Pinia ao novo esquema de subdocumentos do MongoDB, criar o histórico de visitas e implementar a restrição de perfil simulada.
+Este documento detalha o plano para permitir que pacientes previamente cadastrados (que já tiveram alta) possam ser readmitidos no hospital sem precisarem ser cadastrados novamente, evitando dados duplicados.
+
+## Fluxo da Nova Feature (UX/UI)
+
+1. No `SetorView`, o botão superior direito deixará de abrir diretamente o cadastro e passará a se chamar **"Admitir Paciente"**.
+2. Ao clicar, o sistema abrirá o novo **`ModalBuscaPaciente.vue`**.
+   - Neste modal, haverá um campo de busca: *"Buscar por CPF ou Nome..."*.
+   - Abaixo, a lista de resultados encontrados exibirá os pacientes, com um botão **"Admitir"**.
+   - Caso o paciente seja novo e não apareça na busca, haverá um botão em destaque: **"Não encontrou? Cadastrar Novo Paciente"**.
+3. Se o usuário escolher "Cadastrar Novo", o `ModalNovoPaciente` (que já existe) será aberto.
+4. Se o usuário clicar em "Admitir" em um paciente da busca, o sistema fechará a busca e abrirá o `ModalAdmitirPaciente` (que já existe), reaproveitando todo o fluxo de criação de `Atendimento` do backend!
+
+## Proposed Changes
+
+### Componentes / UI
+
+#### [NEW] [ModalBuscaPaciente.vue](file:///c:/Users/mfs90/Documents/UFOPA/SEMESTRES/hospitall/HospitALL/resources/js/components/setor/ModalBuscaPaciente.vue)
+- Criar este componente baseado no `BaseModal`.
+- Fazer um request para `GET /api/pacientes` e implementar um filtro local (computed) baseado no texto digitado (CPF ou Nome).
+- Emitir dois eventos: `@selecionado` (quando acha um paciente) e `@cadastrar` (quando clica em novo).
+
+#### [MODIFY] [SetorView.vue](file:///c:/Users/mfs90/Documents/UFOPA/SEMESTRES/hospitall/HospitALL/resources/js/views/SetorView.vue)
+- Importar o `ModalBuscaPaciente`.
+- Alterar o evento do botão de "Novo Paciente" para abrir primeiramente a busca.
+- Criar funções para gerenciar as aberturas sequenciais de modais (ex: `onSelecionarPacienteDaBusca(paciente)` -> abre `modalAdmitir`).
+
+### Backend
+
+- **Nenhuma alteração é necessária no backend!** 
+O nosso `AtendimentoController` e o `POST /api/atendimentos` já esperam receber um `paciente_id` existente para criar uma nova internação. Tudo vai funcionar nativamente.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> A recontagem de ocupação será feita de forma reativa no Front-end buscando todos os atendimentos ativos da API. Verifique se essa abordagem está alinhada ou se o back-end futuramente providenciará os números consolidados.
-> A restrição de perfil será baseada em uma store global simples (`useAppStore`), controlável a partir do `AppHeader.vue`.
-
-## Proposed Changes
-
-### 1. Persistência dos Dashboards e Ocupação
-
-Para garantir que a ocupação dos leitos reflita fielmente o banco de dados sem depender de um contador estático desatualizado:
-
-#### [MODIFY] `resources/js/stores/hospital.js`
-- Adicionar uma chamada para `/api/atendimentos` (filtrando por status 'INTERNADO' / 'AGUARDANDO_TRIAGEM') ao carregar o hospital, e recalcular dinamicamente a `ocupacao_atual` de cada setor no array local.
-- Criar ações `editarSetor` e `excluirSetor` integradas ao Axios (`api.put` e `api.delete`).
-
-#### [MODIFY] `resources/js/views/DashboardView.vue`
-- Conectar os eventos `@edit` e `@delete` do `AreaCard` às novas ações da store `hospitalStore`.
-
-### 2. Novo Esquema NoSQL (Subset Pattern e Referência Estendida)
-
-#### [MODIFY] `resources/js/stores/paciente.js`
-- Na função `_normalizePaciente(p)`, iterar sobre `resumo_ultimas_visitas` (se existir) e converter os IDs do MongoDB (`{ $oid: "..." }`) para string usando o utilitário `mongoId`.
-
-#### [MODIFY] `resources/js/components/setor/ModalNovoPaciente.vue`
-- Estruturar o `payload` do Axios para enviar `dados_clinicos_fixos` e `contato` como objetos aninhados, conforme o esquema JSON revisado, em vez de propriedades planas soltas.
-
-### 3. Seção de Resumo das Últimas Visitas
-
-#### [NEW] `resources/js/components/prontuario/ResumoVisitas.vue`
-- Componente para iterar sobre `resumo_ultimas_visitas`.
-- Para cada visita, exibir os dados básicos (data, motivo) e um `<RouterLink :to="'/prontuario/' + visita.atendimento_id">` como gatilho de "Ver detalhadamente".
-
-#### [MODIFY] `resources/js/views/ProntuarioView.vue`
-- Importar e acoplar `<ResumoVisitas :visitas="pacienteView.resumo_ultimas_visitas" />` na coluna da esquerda (abaixo dos dados clínicos).
-
-### 4. Simulação de Restrição de Perfil (Fluxo LOGIN.jpg)
-
-#### [NEW] `resources/js/stores/app.js`
-- Criar uma Pinia store contendo o estado `userRole` (padrão: `MEDICO`).
-
-#### [MODIFY] `resources/js/components/layout/AppHeader.vue`
-- Adicionar um seletor visual simples no header para alternar entre `MEDICO` e `RECEPCIONISTA`.
-
-#### [MODIFY] `resources/js/views/ProntuarioView.vue` & `resources/js/components/dashboard/AreaCard.vue`
-- Adicionar `v-if="appStore.userRole !== 'RECEPCIONISTA'"` ao botão "Nova evolução" e às opções de "Editar" e "Excluir" área.
-
----
-
-## Verification Plan
-
-### Manual Verification
-- Recarregar o dashboard e verificar se a barra de ocupação está sendo calculada com base na contagem real de atendimentos ativos.
-- Testar a deleção e edição simulada de um setor no Dashboard.
-- Cadastrar um novo paciente e verificar no Network (ou Mongo) se o payload construiu os objetos `contato` e `dados_clinicos_fixos` corretamente.
+> O que acha desse fluxo com a "etapa intermediária" de busca antes do cadastro, Gabriel? Se concordar com a navegação (Busca -> Seleciona Existente -> Admite **OU** Busca -> Não Acha -> Cadastra -> Admite), dê um "Aprovado" e eu implemento os modais! construiu os objetos `contato` e `dados_clinicos_fixos` corretamente.
 - Acessar o Prontuário de um paciente que possua `resumo_ultimas_visitas` para visualizar a lista e clicar em "Ver detalhadamente" para garantir que o Router navega corretamente.
 - Alternar o perfil para 'RECEPCIONISTA' no header e garantir que os botões clínicos desaparecem.

@@ -14,8 +14,8 @@
         <p class="page-subtitle">{{ setor.descricao }}</p>
       </div>
       <div style="display: flex; gap: 8px;">
-        <button class="btn btn-ghost" @click="modalNovoPaciente = true">
-          <UserPlus :size="16" /> Novo Paciente
+        <button class="btn btn-ghost" @click="modalBusca = true">
+          <UserPlus :size="16" /> Admitir Paciente
         </button>
       </div>
     </div>
@@ -27,6 +27,12 @@
       :setor-nome="setor.nome"
       :paciente-inicial="pacienteParaAdmitir"
       @admitido="onPacienteAdmitido"
+    />
+
+    <ModalBuscaPaciente
+      v-model="modalBusca"
+      @selecionado="onPacienteSelecionadoBusca"
+      @cadastrar="onCadastrarNovoDaBusca"
     />
 
     <ModalNovoPaciente
@@ -121,6 +127,7 @@ import Manchester from '@/components/setor/Manchester.vue';
 import PacienteCard from '@/components/setor/PacienteCard.vue';
 import ModalAdmitirPaciente from '@/components/setor/ModalAdmitirPaciente.vue';
 import ModalNovoPaciente from '@/components/setor/ModalNovoPaciente.vue';
+import ModalBuscaPaciente from '@/components/setor/ModalBuscaPaciente.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -131,6 +138,7 @@ const searchQuery     = ref('');
 const manchesterFilter = ref('todos');
 const modalAdmitir    = ref(false);
 const modalNovoPaciente = ref(false);
+const modalBusca      = ref(false);
 const toastMsg        = ref('');
 const pacienteParaAdmitir = ref(null);
 
@@ -184,6 +192,15 @@ function onPacienteAdmitido(atend) {
   if (setor.value) {
     setor.value.ocupacao_atual = (setor.value.ocupacao_atual || 0) + 1;
   }
+  
+  // Garantir que o paciente admitido esteja na lista local de pacientes do setor
+  if (atend.paciente) {
+    const pId = atend.paciente._id || atend.paciente_id;
+    if (!pacienteStore.pacientes.some(p => p._id === pId)) {
+      pacienteStore.pacientes.unshift(atend.paciente);
+    }
+  }
+
   pacienteParaAdmitir.value = null;
   toastMsg.value = 'Paciente admitido com sucesso no setor!';
   setTimeout(() => toastMsg.value = '', 4000);
@@ -207,6 +224,15 @@ function onPacienteClick(item) {
   }
   pacienteParaAdmitir.value = item.paciente;
   modalAdmitir.value = true;
+}
+
+function onPacienteSelecionadoBusca(paciente) {
+  pacienteParaAdmitir.value = paciente;
+  modalAdmitir.value = true;
+}
+
+function onCadastrarNovoDaBusca() {
+  modalNovoPaciente.value = true;
 }
 
 onMounted(load);
