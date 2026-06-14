@@ -12,6 +12,8 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
+
 const props = defineProps({
   icon: { type: Object, required: true },
   label: { type: String, required: true },
@@ -22,11 +24,13 @@ const props = defineProps({
   iconColor: { type: String, default: '#0EA5E9' },
 });
 
-const subtextClass = {
-  positive: 'stat-card__sub--positive',
-  negative: 'stat-card__sub--negative',
-  neutral: 'stat-card__sub--neutral',
-}[props.subtextVariant] ?? 'stat-card__sub--neutral';
+const subtextClass = computed(() => {
+  return {
+    positive: 'stat-card__sub--positive',
+    negative: 'stat-card__sub--negative',
+    neutral: 'stat-card__sub--neutral',
+  }[props.subtextVariant] ?? 'stat-card__sub--neutral';
+});
 </script>
 
 <style scoped>

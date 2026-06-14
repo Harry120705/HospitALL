@@ -25,7 +25,8 @@
 
 <script setup>
 import { computed } from 'vue';
-import { User, Phone, Link2 } from 'lucide-vue-next';
+import { User, Phone } from 'lucide-vue-next';
+import { formatDate, calcularIdade } from '@/utils/date.js';
 
 const props = defineProps({
   paciente: { type: Object, required: true },
@@ -52,16 +53,7 @@ const contatoParentesco = computed(() =>
   props.paciente.contato?.parentesco ?? '—'
 );
 
-const idade = computed(() => {
-  if (!props.paciente.data_nascimento) return '—';
-  const birth = new Date(props.paciente.data_nascimento);
-  const diff = Date.now() - birth.getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
-});
-
-function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('pt-BR');
-}
+const idade = computed(() => calcularIdade(props.paciente.data_nascimento));
 </script>
 
 <style scoped>

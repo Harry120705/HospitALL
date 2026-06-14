@@ -57,7 +57,7 @@ import { RouterLink, useRouter } from 'vue-router';
 import {
   MoreVertical, Pencil, BarChart2, Trash2, ArrowRight,
   Baby, Scissors, Activity, AlarmCheck, HeartHandshake,
-  HeartPulse, Bone, Brain, BedDouble,
+  HeartPulse, Bone, Brain, BedDouble, Eye, Stethoscope,
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -79,6 +79,8 @@ const ICON_MAP = {
   'heart-pulse': HeartPulse,
   bone: Bone,
   brain: Brain,
+  eye: Eye,
+  stethoscope: Stethoscope,
 };
 
 const resolvedIcon = computed(() => ICON_MAP[props.setor.icone] ?? BedDouble);

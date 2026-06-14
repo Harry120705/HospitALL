@@ -92,6 +92,7 @@ import { useRoute, RouterLink } from 'vue-router';
 import { ArrowLeft, BedDouble, Plus, FileText, AlertCircle, FileX } from 'lucide-vue-next';
 import { usePacienteStore } from '@/stores/paciente.js';
 import { useHospitalStore } from '@/stores/hospital.js';
+import { MANCHESTER_MAP } from '@/constants/manchester.js';
 import DadosGerais from '@/components/prontuario/DadosGerais.vue';
 import DadosClinicos from '@/components/prontuario/DadosClinicos.vue';
 import TimelineEvolution from '@/components/prontuario/TimelineEvolution.vue';
@@ -126,14 +127,6 @@ const backLink = computed(() => {
   const idSetor = atendimento.value?.alocacao_leito?.setor_id;
   return idSetor ? `/setor/${idSetor}` : '/';
 });
-
-const MANCHESTER_MAP = {
-  emergencia:    { label: 'Emergência',    color: '#EF4444' },
-  muito_urgente: { label: 'Muito Urgente', color: '#F97316' },
-  urgente:       { label: 'Urgente',       color: '#CA8A04' },
-  pouco_urgente: { label: 'Pouco Urgente', color: '#16A34A' },
-  nao_urgente:   { label: 'Não Urgente',   color: '#0284C7' },
-};
 
 const manchesterData  = computed(() =>
   MANCHESTER_MAP[atendimento.value?.protocolo_manchester] ?? { label: '—', color: '#94A3B8' }

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '@/services/api.js';
+import { mongoId } from '@/utils/mongo.js';
 
 /**
  * Store de Hospital
@@ -107,7 +108,7 @@ export const useHospitalStore = defineStore('hospital', () => {
   }
 
   function getSetorById(id) {
-    return setores.value.find((s) => _mongoId(s) === id) ?? null;
+    return setores.value.find((s) => mongoId(s) === id) ?? null;
   }
 
   // ── Helpers privados ──────────────────────────────────────────
@@ -116,18 +117,9 @@ export const useHospitalStore = defineStore('hospital', () => {
   function _normalizeHospital(h) {
     return {
       ...h,
-      _id: _mongoId(h),
-      setores: (h.setores ?? []).map((s) => ({ ...s, _id: _mongoId(s) })),
+      _id: mongoId(h),
+      setores: (h.setores ?? []).map((s) => ({ ...s, _id: mongoId(s) })),
     };
-  }
-
-  function _mongoId(obj) {
-    if (!obj) return null;
-    const id = obj._id || obj.id;
-    if (!id) return null;
-    if (typeof id === 'string') return id;
-    if (typeof id === 'object' && id.$oid) return id.$oid;
-    return String(id);
   }
 
   return {

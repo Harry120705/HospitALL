@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import api from '@/services/api.js';
+import { mongoId } from '@/utils/mongo.js';
 
 /**
  * Store de Paciente / Atendimento
@@ -19,29 +20,15 @@ export const usePacienteStore = defineStore('paciente', () => {
 
   // ── Helpers ───────────────────────────────────────────────────
 
-  /** Extrai string do _id do MongoDB (suporta { $oid: '...' } e string direta) */
-  function _mongoId(obj) {
-    if (!obj) return null;
-    const id = obj._id || obj.id;
-    if (!id) return null;
-    if (typeof id === 'string') return id;
-    if (typeof id === 'object' && id.$oid) return id.$oid;
-    return String(id);
-  }
-
   function _normalizeAtendimento(a) {
     const norm = {
       ...a,
-      _id:        _mongoId(a),
-      paciente_id: a.paciente_id
-        ? (typeof a.paciente_id === 'object' && a.paciente_id.$oid
-            ? a.paciente_id.$oid
-            : String(a.paciente_id))
-        : null,
+      _id:         mongoId(a),
+      paciente_id: mongoId(a.paciente_id),
     };
     // Normaliza _id do paciente embutido se existir
     if (norm.paciente) {
-      norm.paciente = { ...norm.paciente, _id: _mongoId(norm.paciente) };
+      norm.paciente = { ...norm.paciente, _id: mongoId(norm.paciente) };
     }
     return norm;
   }
@@ -49,12 +36,8 @@ export const usePacienteStore = defineStore('paciente', () => {
   function _normalizePaciente(p) {
     return {
       ...p,
-      _id: _mongoId(p),
-      setor_id: p?.setor_id
-        ? (typeof p.setor_id === 'object' && p.setor_id.$oid
-            ? p.setor_id.$oid
-            : String(p.setor_id))
-        : null,
+      _id: mongoId(p),
+      setor_id: mongoId(p?.setor_id),
     };
   }
 

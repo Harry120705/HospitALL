@@ -35,17 +35,11 @@
 
 <script setup>
 import { Stethoscope } from 'lucide-vue-next';
+import { formatDateTime } from '@/utils/date.js';
 
 const props = defineProps({
   evolucoes: { type: Array, default: () => [] },
 });
-
-function formatDateTime(str) {
-  return new Date(str).toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
 
 const TIPO_LABELS = {
   evolucao: 'Evolução',

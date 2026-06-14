@@ -26,7 +26,7 @@
         <div v-if="buscaNome.length >= 2 && !pacienteSelecionado" class="busca-dropdown">
           <button
             v-for="p in resultados"
-            :key="_mongoId(p)"
+            :key="mongoId(p)"
             type="button"
             class="busca-item"
             @click="selecionarPaciente(p)"
@@ -108,12 +108,14 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { UserPlus, Search, CheckCircle, X, AlertCircle, Loader2 } from 'lucide-vue-next';
 import BaseModal from '@/components/ui/BaseModal.vue';
 import { usePacienteStore } from '@/stores/paciente.js';
 import { useHospitalStore  } from '@/stores/hospital.js';
 import api from '@/services/api.js';
+import { mongoId } from '@/utils/mongo.js';
+import { calcularIdade } from '@/utils/date.js';
 
 const props = defineProps({
   modelValue: { type: Boolean, required: true },
@@ -134,8 +136,11 @@ const loading           = ref(false);
 const errorMsg          = ref('');
 const buscaNome         = ref('');
 const resultados        = ref([]);
-const isSearching       = ref(false);
 const pacienteSelecionado = ref(null);
+
+const pacientesList = ref([]);
+const isFetchingPacientes = ref(false);
+const isSearching = computed(() => isFetchingPacientes.value);
 
 const form = ref({
   leito:                '',
@@ -150,30 +155,40 @@ watch(() => props.pacienteInicial, (value) => {
   resultados.value = [];
 });
 
-// ── Busca de pacientes na API ─────────────────────────────────
-let debounceTimer;
-async function onBusca() {
-  pacienteSelecionado.value = null; // reseta seleção ao digitar
-  clearTimeout(debounceTimer);
-  if (buscaNome.value.length < 2) { 
-    resultados.value = []; 
-    isSearching.value = false;
-    return; 
+// ── Cache de pacientes ────────────────────────────────────────
+async function carregarPacientesParaBusca() {
+  if (pacientesList.value.length > 0) return;
+  isFetchingPacientes.value = true;
+  try {
+    const { data } = await api.get('/pacientes');
+    pacientesList.value = Array.isArray(data) ? data : data.data ?? [];
+  } catch (err) {
+    console.error('Erro ao carregar lista de pacientes:', err);
+  } finally {
+    isFetchingPacientes.value = false;
   }
-  
-  isSearching.value = true;
-  debounceTimer = setTimeout(async () => {
-    try {
-      const { data } = await api.get('/pacientes');
-      const q = buscaNome.value.toLowerCase();
-      const lista = Array.isArray(data) ? data : data.data ?? [];
-      resultados.value = lista.filter((p) => p.nome?.toLowerCase().includes(q)).slice(0, 6);
-    } catch { 
-      resultados.value = []; 
-    } finally {
-      isSearching.value = false;
-    }
-  }, 300);
+}
+
+watch(open, (v) => {
+  if (v) {
+    carregarPacientesParaBusca();
+  }
+});
+
+// Filtro local reativo em tempo real
+watch([buscaNome, pacientesList, pacienteSelecionado], () => {
+  if (buscaNome.value.length < 2 || pacienteSelecionado.value) {
+    resultados.value = [];
+    return;
+  }
+  const q = buscaNome.value.toLowerCase();
+  resultados.value = pacientesList.value
+    .filter((p) => p.nome?.toLowerCase().includes(q))
+    .slice(0, 6);
+});
+
+function onBusca() {
+  pacienteSelecionado.value = null; // reseta seleção ao digitar
 }
 
 function selecionarPaciente(p) {
@@ -182,30 +197,15 @@ function selecionarPaciente(p) {
   resultados.value          = [];
 }
 
-function _mongoId(obj) {
-  if (!obj) return null;
-  const id = obj._id || obj.id;
-  if (!id) return null;
-  if (typeof id === 'string') return id;
-  if (typeof id === 'object' && id.$oid) return id.$oid;
-  return String(id);
-}
-
-function calcularIdade(dataNasc) {
-  if (!dataNasc) return '?';
-  const diff = Date.now() - new Date(dataNasc).getTime();
-  return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
-}
-
 async function submit() {
   if (!pacienteSelecionado.value) return;
   loading.value  = true;
   errorMsg.value = '';
   try {
     const admitido = await pacienteStore.admitirPaciente({
-      paciente_id:          _mongoId(pacienteSelecionado.value),
+      paciente_id:          mongoId(pacienteSelecionado.value),
       paciente_obj:         pacienteSelecionado.value,
-      hospital_id:          _mongoId(hospitalStore.hospital),
+      hospital_id:          mongoId(hospitalStore.hospital),
       setor_id:             props.setorId,
       setor_nome:           props.setorNome,
       leito:                form.value.leito,
