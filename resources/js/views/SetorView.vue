@@ -59,7 +59,7 @@
         </div>
         <div>
           <p class="setor-stat__label">Pacientes atuais</p>
-          <p class="setor-stat__value">{{ setor.ocupacao_atual }}</p>
+          <p class="setor-stat__value">{{ activePacientes.length }}</p>
         </div>
       </div>
       <div class="card setor-stat">
@@ -68,7 +68,7 @@
         </div>
         <div>
           <p class="setor-stat__label">Leitos disponíveis</p>
-          <p class="setor-stat__value">{{ setor.capacidade_maxima - setor.ocupacao_atual }}</p>
+          <p class="setor-stat__value">{{ setor.capacidade_maxima - pacientesComLeito.length }}</p>
         </div>
       </div>
     </div>
@@ -162,8 +162,16 @@ const pacientesComAtendimento = computed(() => {
   }));
 });
 
+const activePacientes = computed(() => {
+  return pacientesComAtendimento.value.filter(item => item.atendimento?.status !== 'ALTA');
+});
+
+const pacientesComLeito = computed(() => {
+  return activePacientes.value.filter(item => item.atendimento?.alocacao_leito?.numero);
+});
+
 const filteredPacientes = computed(() => {
-  let list = pacientesComAtendimento.value;
+  let list = activePacientes.value;
   if (manchesterFilter.value !== 'todos') {
     list = list.filter((item) => {
       const code = item.atendimento?.protocolo_manchester
@@ -188,8 +196,8 @@ async function load() {
 }
 
 function onPacienteAdmitido(atend) {
-  // Atualiza o gráfico de ocupação do setor
-  if (setor.value) {
+  // Atualiza o gráfico de ocupação do setor APENAS se um leito físico foi alocado
+  if (setor.value && atend.alocacao_leito && atend.alocacao_leito.numero) {
     setor.value.ocupacao_atual = (setor.value.ocupacao_atual || 0) + 1;
   }
   

@@ -46,6 +46,17 @@
             {{ manchesterLabel }}
           </span>
 
+          <select 
+            class="status-select"
+            v-if="appStore.userRole !== 'RECEPCIONISTA' && atendimento.status !== 'ALTA'"
+            :value="atendimento.status"
+            @change="mudarStatus($event.target.value)"
+          >
+            <option value="AGUARDANDO_TRIAGEM">Aguardando Triagem</option>
+            <option value="EM_ATENDIMENTO">Em Atendimento</option>
+            <option value="INTERNADO">Internado</option>
+          </select>
+
           <button v-if="appStore.userRole !== 'RECEPCIONISTA' && atendimento.status !== 'ALTA'" class="btn btn-outline" @click="confirmarAlta">
             <LogOut :size="15" /> Dar Alta
           </button>
@@ -159,6 +170,15 @@ function onEvolucaoCriada(ev) {
 
 function confirmarAlta() {
   modalAltaOpen.value = true;
+}
+
+async function mudarStatus(novoStatus) {
+  try {
+    await pacienteStore.atualizarStatusAtendimento(atendimento.value._id, novoStatus);
+    toastStore.success(`Status alterado para: ${novoStatus}`);
+  } catch (e) {
+    toastStore.error('Erro ao alterar status: ' + e.message);
+  }
 }
 
 async function realizarAlta() {

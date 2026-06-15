@@ -139,9 +139,32 @@ export const usePacienteStore = defineStore('paciente', () => {
     loading.value = true;
     error.value = null;
     try {
-      const { data } = await api.put(`/atendimentos/${atendimentoId}`, { status: 'ALTA' });
+      const { data } = await api.post(`/atendimentos/${atendimentoId}`, { status: 'ALTA', _method: 'PUT' });
       if (atendimentoAtual.value && atendimentoAtual.value._id === atendimentoId) {
         atendimentoAtual.value.status = 'ALTA';
+      }
+      return data;
+    } catch (err) {
+      error.value = err.response?.data?.message ?? err.message;
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  async function atualizarStatusAtendimento(atendimentoId, status) {
+    loading.value = true;
+    error.value = null;
+    try {
+      const { data } = await api.post(`/atendimentos/${atendimentoId}`, { status, _method: 'PUT' });
+      if (atendimentoAtual.value && atendimentoAtual.value._id === atendimentoId) {
+        atendimentoAtual.value.status = status;
+      }
+      
+      // Atualiza também na lista da tela de setor
+      const idx = atendimentos.value.findIndex(a => a._id === atendimentoId);
+      if (idx !== -1) {
+        atendimentos.value[idx].status = status;
       }
       return data;
     } catch (err) {
@@ -156,7 +179,7 @@ export const usePacienteStore = defineStore('paciente', () => {
     loading.value = true;
     error.value = null;
     try {
-      const { data } = await api.put(`/pacientes/${id}`, payload);
+      const { data } = await api.post(`/pacientes/${id}`, { ...payload, _method: 'PUT' });
       // Atualiza estado local se o paciente em exibição for o editado
       if (atendimentoAtual.value?.paciente?._id === id) {
         atendimentoAtual.value.paciente = { ...atendimentoAtual.value.paciente, ...data };
@@ -224,7 +247,7 @@ export const usePacienteStore = defineStore('paciente', () => {
   async function editarEvolucao(idEvolucao, descricao) {
     if (!atendimentoAtual.value) return;
     try {
-      await api.put(`/atendimentos/${atendimentoAtual.value._id}/evolucoes/${idEvolucao}`, { descricao });
+      await api.post(`/atendimentos/${atendimentoAtual.value._id}/evolucoes/${idEvolucao}`, { descricao, _method: 'PUT' });
       const idx = atendimentoAtual.value.evolucoes_medicas?.findIndex(e => e.id === idEvolucao);
       if (idx !== undefined && idx !== -1) {
         atendimentoAtual.value.evolucoes_medicas[idx].descricao = descricao;
@@ -246,6 +269,7 @@ export const usePacienteStore = defineStore('paciente', () => {
     fetchPaciente,
     fetchAtendimento,
     darAlta,
+    atualizarStatusAtendimento,
     editarPaciente,
     admitirPaciente,
     pushEvolucao,

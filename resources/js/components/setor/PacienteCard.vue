@@ -40,6 +40,10 @@
           <Stethoscope :size="12" />
           {{ atendimento?.dados_iniciais?.queixa_principal ?? 'Sem queixa registrada' }}
         </span>
+        <span class="meta-divider">·</span>
+        <span class="meta-item" style="text-transform: capitalize">
+          Status: {{ (atendimento?.status || '').replace('_', ' ').toLowerCase() }}
+        </span>
       </div>
     </div>
 
