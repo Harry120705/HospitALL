@@ -40,7 +40,7 @@ class AtendimentoController extends Controller
                     $hospital = Hospital::findOrFail($hospitalId);
                     
                     $setor = collect($hospital->setores)->first(function ($s) use ($setorId) {
-                        $id = $s['_id'] ?? $s['id_setor'] ?? null;
+                        $id = $s['_id'] ?? $s['id_setor'] ?? $s['id'] ?? null;
                         return (string) $id === (string) $setorId;
                     });
 
@@ -48,7 +48,13 @@ class AtendimentoController extends Controller
                         throw ValidationException::withMessages(['setor' => 'Setor não encontrado no hospital.']);
                     }
 
-                    if (($setor['ocupacao_atual'] ?? 0) >= ($setor['capacidade_maxima'] ?? 1)) {
+                    $ocupacaoReal = Atendimento::where('alocacao_leito.setor_id', $setorId)
+                        ->whereNotIn('status', ['ALTA'])
+                        ->whereNotNull('alocacao_leito.numero')
+                        ->where('alocacao_leito.numero', '!=', '')
+                        ->count();
+
+                    if ($ocupacaoReal >= ($setor['capacidade_maxima'] ?? 1)) {
                         throw ValidationException::withMessages(['setor' => 'Capacidade máxima atingida para o setor selecionado.']);
                     }
 
@@ -57,8 +63,13 @@ class AtendimentoController extends Controller
                         ->update(['$inc' => ['setores.$.ocupacao_atual' => 1]]);
                     
                     if (!$updated) {
-                        Hospital::where('_id', $hospitalId)
+                        $updated = Hospital::where('_id', $hospitalId)
                             ->where('setores.id_setor', $setorId)
+                            ->update(['$inc' => ['setores.$.ocupacao_atual' => 1]]);
+                    }
+                    if (!$updated) {
+                        Hospital::where('_id', $hospitalId)
+                            ->where('setores.id', $setorId)
                             ->update(['$inc' => ['setores.$.ocupacao_atual' => 1]]);
                     }
                 }
@@ -121,6 +132,21 @@ class AtendimentoController extends Controller
             if ($novoStatus !== 'ALTA' || $atendimento->status === 'ALTA') {
                 \Log::info("Entrou no IF de atualização comum. bypassando transação.");
                 $atendimento->update($request->all());
+
+                if ($novoStatus) {
+                    // Sincroniza o status do Paciente na collection principal
+                    Paciente::where('_id', $atendimento->paciente_id)->update([
+                        'status_paciente' => $novoStatus
+                    ]);
+
+                    // Sincroniza o status no array de resumo_ultimas_visitas
+                    Paciente::where('_id', $atendimento->paciente_id)
+                        ->where('resumo_ultimas_visitas.atendimento_id', $atendimento->_id ?? $atendimento->id)
+                        ->update([
+                            'resumo_ultimas_visitas.$.status' => $novoStatus
+                        ]);
+                }
+
                 return response()->json($atendimento);
             }
 
@@ -156,6 +182,13 @@ class AtendimentoController extends Controller
                             ->where('setores.ocupacao_atual', '>', 0)
                             ->update(['$inc' => ['setores.$.ocupacao_atual' => -1]]);
                         \Log::info("Leito decrementado (2a tentativa): " . ($updated2 ? 'SIM' : 'NAO'));
+                        if (!$updated2) {
+                            $updated3 = Hospital::where('_id', $hospitalId)
+                                ->where('setores.id', $setorId)
+                                ->where('setores.ocupacao_atual', '>', 0)
+                                ->update(['$inc' => ['setores.$.ocupacao_atual' => -1]]);
+                            \Log::info("Leito decrementado (3a tentativa): " . ($updated3 ? 'SIM' : 'NAO'));
+                        }
                     }
                 }
 

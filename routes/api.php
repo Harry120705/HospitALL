@@ -25,3 +25,5 @@ Route::put('atendimentos/{id}/evolucoes/{idEvolucao}', [\App\Http\Controllers\No
 
 // Filtro de atendimentos por setor_id (sobrepõe index com query params)
 Route::get('atendimentos/por-setor', [\App\Http\Controllers\NoSQLController::class, 'atendimentosPorSetor']);
+
+

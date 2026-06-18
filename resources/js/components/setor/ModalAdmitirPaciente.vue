@@ -216,11 +216,11 @@ async function submit() {
     open.value = false;
     resetForm();
   } catch (err) {
-    errorMsg.value =
-      err.response?.data?.message ??
-      (err.response?.data?.errors
-        ? Object.values(err.response.data.errors).flat().join(', ')
-        : err.message);
+    if (err.response?.data?.errors) {
+      errorMsg.value = Object.values(err.response.data.errors).flat().join(', ');
+    } else {
+      errorMsg.value = err.response?.data?.message ?? err.message;
+    }
   } finally {
     loading.value = false;
   }
